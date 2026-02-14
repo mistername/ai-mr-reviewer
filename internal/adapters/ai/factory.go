@@ -1,0 +1,33 @@
+package ai
+
+import (
+	"fmt"
+
+	"github.com/adlandh/ai-mr-reviewer/internal/domain"
+)
+
+func NewAIProvider(config domain.ConfigPort) (domain.AIProviderPort, error) {
+	provider := config.GetAIProvider()
+
+	switch provider {
+	case "ollama":
+		return NewOllamaClient(config.GetOllamaURL(), config.GetOllamaModel()), nil
+
+	case "openai":
+		if config.GetOpenAIAPIKey() == "" {
+			return nil, fmt.Errorf("OPENAI_API_KEY is required for openai provider")
+		}
+
+		return NewOpenAIClient(config.GetOpenAIAPIKey(), config.GetOpenAIBaseURL(), config.GetOpenAIModel()), nil
+
+	case "anthropic":
+		if config.GetAnthropicAuthToken() == "" {
+			return nil, fmt.Errorf("ANTHROPIC_AUTH_TOKEN is required for anthropic provider")
+		}
+
+		return NewAnthropicClient(config.GetAnthropicAuthToken(), config.GetAnthropicBaseURL(), config.GetAnthropicModel()), nil
+
+	default:
+		return nil, fmt.Errorf("unsupported AI provider: %s (supported: ollama, openai, anthropic)", provider)
+	}
+}
