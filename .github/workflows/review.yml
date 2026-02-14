@@ -23,4 +23,4 @@ jobs:
           AI_PROVIDER: openai
           OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        run: go install github.com/adlandh/ai-mr-reviewer@latest && ai-mr-reviewer
+        run: go install . && ai-mr-reviewer
