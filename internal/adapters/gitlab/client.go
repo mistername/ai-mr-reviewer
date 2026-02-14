@@ -2,11 +2,14 @@ package gitlab
 
 import (
 	"fmt"
+	"strings"
 
 	gitlab "gitlab.com/gitlab-org/api/client-go"
 
 	"github.com/adlandh/ai-mr-reviewer/internal/domain"
 )
+
+const commentPrefix = "ai-mr-reviewer:"
 
 type Client struct {
 	config    domain.ConfigPort
@@ -86,11 +89,13 @@ func (c *Client) AddMergeRequestDiscussion(file string, line int, note string) e
 
 	line64 := int64(line)
 
+	noteWithPrefix := commentPrefix + " " + note
+
 	_, _, err := c.git.Discussions.CreateMergeRequestDiscussion(
 		c.projectID,
 		int64(c.iid),
 		&gitlab.CreateMergeRequestDiscussionOptions{
-			Body: &note,
+			Body: &noteWithPrefix,
 			Position: &gitlab.PositionOptions{
 				PositionType: &positionType,
 				NewLine:      &line64,
@@ -121,6 +126,10 @@ func (c *Client) DeleteBotCommentsExceptResolved() error {
 
 	for _, note := range notes {
 		if note.System || note.Resolved {
+			continue
+		}
+
+		if !strings.HasPrefix(note.Body, commentPrefix) {
 			continue
 		}
 

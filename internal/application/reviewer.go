@@ -109,6 +109,8 @@ func hasExistingComments(path string, existing map[string][]string) bool {
 	return false
 }
 
+const commentPrefix = "ai-mr-reviewer:"
+
 func (r *Reviewer) reviewDiff(d domain.Diff) error {
 	reviewText, err := r.aiProvider.ReviewCode(filepath.Base(d.NewPath), d.Content, detectLanguage(d.NewPath))
 	if err != nil {
@@ -121,7 +123,7 @@ func (r *Reviewer) reviewDiff(d domain.Diff) error {
 	}
 
 	for _, issue := range issues {
-		body := fmt.Sprintf("**%s**: %s", strings.ToUpper(issue.Severity), issue.Message)
+		body := fmt.Sprintf("%s**%s**: %s", commentPrefix, strings.ToUpper(issue.Severity), issue.Message)
 		if err := r.mrProvider.AddMergeRequestDiscussion(d.NewPath, issue.Line, body); err != nil {
 			r.logger.Warn("failed to add comment", zap.String("path", d.NewPath), zap.Int("line", issue.Line), zap.Error(err))
 		}

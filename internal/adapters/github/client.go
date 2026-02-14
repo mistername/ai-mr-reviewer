@@ -106,6 +106,8 @@ func (c *Client) AddMergeRequestDiscussion(file string, line int, note string) e
 	return nil
 }
 
+const commentPrefix = "ai-mr-reviewer:"
+
 func (c *Client) DeleteBotCommentsExceptResolved() error {
 	err := c.deleteBotReviewComments()
 	if err != nil {
@@ -122,11 +124,11 @@ func (c *Client) deleteBotReviewComments() error {
 	}
 
 	for _, comment := range reviewComments {
-		if comment.ID == nil || comment.User == nil {
+		if comment.ID == nil || comment.Body == nil {
 			continue
 		}
 
-		if !strings.Contains(comment.User.GetLogin(), "bot") {
+		if !strings.HasPrefix(*comment.Body, commentPrefix) {
 			continue
 		}
 
@@ -146,11 +148,11 @@ func (c *Client) deleteBotIssueComments() error {
 	}
 
 	for _, comment := range issueComments {
-		if comment.ID == nil || comment.User == nil {
+		if comment.ID == nil || comment.Body == nil {
 			continue
 		}
 
-		if !strings.Contains(comment.User.GetLogin(), "bot") {
+		if !strings.HasPrefix(*comment.Body, commentPrefix) {
 			continue
 		}
 
