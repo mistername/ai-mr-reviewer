@@ -113,10 +113,23 @@ func (r *Reviewer) reviewDiff(d domain.Diff) error {
 
 func parseReviewResponse(response string) ([]domain.ReviewIssue, error) {
 	trimmed := strings.TrimSpace(response)
-	start := strings.Index(trimmed, "{")
 
+	start := strings.Index(trimmed, "{")
 	end := strings.LastIndex(trimmed, "}")
 	if start == -1 || end == -1 {
+		start = strings.Index(trimmed, "[")
+		end = strings.LastIndex(trimmed, "]")
+	}
+
+	if start == -1 || end == -1 {
+		start = strings.Index(trimmed, "```json")
+		if start != -1 {
+			start += 7
+			end = strings.LastIndex(trimmed, "```")
+		}
+	}
+
+	if start == -1 || end == -1 || end < start {
 		return nil, fmt.Errorf("json object not found")
 	}
 
