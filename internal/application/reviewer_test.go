@@ -97,7 +97,7 @@ func TestRunReviewsOnlyNewDiffs(t *testing.T) {
 	c := &configMock{iid: "5"}
 	g := &mrProviderMock{
 		comments: map[string][]string{
-			"already.go:1": {"exists"},
+			"already.go:1": {"ai-mr-reviewer:**WARNING**: fix it"},
 		},
 		diffs: []domain.Diff{
 			{NewPath: "already.go", Content: "diff1"},

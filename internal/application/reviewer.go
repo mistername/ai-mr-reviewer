@@ -75,9 +75,11 @@ func (r *Reviewer) Run() error {
 		return fmt.Errorf("get MR changes: %w", err)
 	}
 
+	prefix := r.config.GetCommentPrefix() + ":"
+
 	var diffErrors error
 
-	for _, d := range r.filterNewDiffs(diffs, existing) {
+	for _, d := range r.filterNewDiffs(diffs, existing, prefix) {
 		if err := r.reviewDiff(d); err != nil {
 			diffErrors = errors.Join(diffErrors, fmt.Errorf("review failed %s: %w", d.NewPath, err))
 			r.logger.Warn("review failed", zap.String("path", d.NewPath), zap.Error(err))
@@ -87,11 +89,11 @@ func (r *Reviewer) Run() error {
 	return diffErrors
 }
 
-func (r *Reviewer) filterNewDiffs(diffs []domain.Diff, existing map[string][]string) []domain.Diff {
+func (r *Reviewer) filterNewDiffs(diffs []domain.Diff, existing map[string][]string, prefix string) []domain.Diff {
 	filtered := make([]domain.Diff, 0, len(diffs))
 
 	for _, d := range diffs {
-		if !hasExistingComments(d.NewPath, existing) {
+		if !hasExistingComments(d.NewPath, existing, prefix) {
 			filtered = append(filtered, d)
 		}
 	}
@@ -99,10 +101,14 @@ func (r *Reviewer) filterNewDiffs(diffs []domain.Diff, existing map[string][]str
 	return filtered
 }
 
-func hasExistingComments(path string, existing map[string][]string) bool {
-	for key := range existing {
+func hasExistingComments(path string, existing map[string][]string, prefix string) bool {
+	for key, bodies := range existing {
 		if strings.HasPrefix(key, path+":") {
-			return true
+			for _, body := range bodies {
+				if strings.HasPrefix(body, prefix) {
+					return true
+				}
+			}
 		}
 	}
 
