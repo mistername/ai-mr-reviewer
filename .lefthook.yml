@@ -3,7 +3,7 @@ pre-push:
   commands:
     lint:
       tags: run linter
-      run: golangci-lint run --fix
+      run: golangci-lint run
       glob: "*.go"
     test:
       tags: run tests

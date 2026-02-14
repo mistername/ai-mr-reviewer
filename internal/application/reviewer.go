@@ -101,7 +101,7 @@ func (r *Reviewer) filterNewDiffs(diffs []domain.Diff, existing map[string][]str
 
 func hasExistingComments(path string, existing map[string][]string) bool {
 	for key := range existing {
-		if strings.HasPrefix(key, path+":") || strings.HasPrefix(key, "issue:") {
+		if strings.HasPrefix(key, path+":") {
 			return true
 		}
 	}

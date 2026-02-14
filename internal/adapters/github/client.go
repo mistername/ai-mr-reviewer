@@ -78,17 +78,6 @@ func (c *Client) GetExistingComments() (map[string][]string, error) {
 		}
 	}
 
-	issueComments, _, err := c.client.Issues.ListComments(context.Background(), c.owner, c.repo, c.prNumber, &github.IssueListCommentsOptions{})
-	if err != nil {
-		return nil, fmt.Errorf("failed to list PR issue comments: %w", err)
-	}
-
-	for _, comment := range issueComments {
-		if comment.Body != nil {
-			existing["issue:"+*comment.Body] = append(existing["issue:"+*comment.Body], *comment.Body)
-		}
-	}
-
 	return existing, nil
 }
 

@@ -10,11 +10,15 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - uses: actions/checkout@v6
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
           go-version: '1.25'
+          cache: true
+
+      - name: Checkout Code
+        uses: actions/checkout@v6
+
       - name: Run Review
         env:
           VCS_PROVIDER: github
@@ -27,4 +31,4 @@ jobs:
           OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_MODEL: ${{ secrets.OPENAI_MODEL }}
-        run: go install . && ai-mr-reviewer
+        run: go install -bin-name=ai-mr-reviewer . && ai-mr-reviewer
