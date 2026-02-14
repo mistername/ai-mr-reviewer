@@ -63,17 +63,28 @@ func (c *Client) GetMergeRequestChanges() ([]domain.Diff, error) {
 }
 
 func (c *Client) GetExistingComments() (map[string][]string, error) {
-	comments, _, err := c.client.PullRequests.ListComments(context.Background(), c.owner, c.repo, c.prNumber, &github.PullRequestListCommentsOptions{})
-	if err != nil {
-		return nil, fmt.Errorf("failed to list PR comments: %w", err)
-	}
-
 	existing := make(map[string][]string)
 
-	for _, comment := range comments {
+	reviewComments, _, err := c.client.PullRequests.ListComments(context.Background(), c.owner, c.repo, c.prNumber, &github.PullRequestListCommentsOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list PR review comments: %w", err)
+	}
+
+	for _, comment := range reviewComments {
 		if comment.Path != nil && comment.Line != nil {
 			key := fmt.Sprintf("%s:%d", *comment.Path, *comment.Line)
 			existing[key] = append(existing[key], *comment.Body)
+		}
+	}
+
+	issueComments, _, err := c.client.Issues.ListComments(context.Background(), c.owner, c.repo, c.prNumber, &github.IssueListCommentsOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list PR issue comments: %w", err)
+	}
+
+	for _, comment := range issueComments {
+		if comment.Body != nil {
+			existing["issue:"+*comment.Body] = append(existing["issue:"+*comment.Body], *comment.Body)
 		}
 	}
 

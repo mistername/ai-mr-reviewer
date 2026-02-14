@@ -81,13 +81,22 @@ func (r *Reviewer) filterNewDiffs(diffs []domain.Diff, existing map[string][]str
 	filtered := make([]domain.Diff, 0, len(diffs))
 
 	for _, d := range diffs {
-		key := fmt.Sprintf("%s:1", d.NewPath)
-		if _, ok := existing[key]; !ok {
+		if !hasExistingComments(d.NewPath, existing) {
 			filtered = append(filtered, d)
 		}
 	}
 
 	return filtered
+}
+
+func hasExistingComments(path string, existing map[string][]string) bool {
+	for key := range existing {
+		if strings.HasPrefix(key, path+":") || strings.HasPrefix(key, "issue:") {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (r *Reviewer) reviewDiff(d domain.Diff) error {
