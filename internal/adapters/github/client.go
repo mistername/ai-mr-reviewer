@@ -22,7 +22,7 @@ type Client struct {
 func NewClient(token, owner, repo, prNumber, commitSHA string) (*Client, error) {
 	httpClient := &http.Client{}
 	client := github.NewClient(httpClient)
-	client.WithAuthToken(token)
+	client = client.WithAuthToken(token)
 
 	prNum, err := strconv.Atoi(prNumber)
 	if err != nil {
