@@ -151,10 +151,9 @@ ai-code-review:
     OLLAMA_URL: "http://ollama:11434"
     OLLAMA_MODEL: "llama3.2"
   before_script:
-    - apk add --no-cache git
-    - go build -o /app/mr_reviewer .
+    - go install github.com/adlandh/ai-mr-reviewer@latest
   script:
-    - /app/mr_reviewer
+    - ai-mr-reviewer
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_MERGE_REQUEST_IID
@@ -178,9 +177,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.25'
-      - name: Build
-        run: go build -o mr_reviewer .
-      - name: Run Review
+      - name: Install and Run Review
         env:
           VCS_PROVIDER: github
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -190,7 +187,7 @@ jobs:
           CI_COMMIT_SHA: ${{ github.sha }}
           AI_PROVIDER: openai
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        run: ./mr_reviewer
+        run: go install github.com/adlandh/ai-mr-reviewer@latest && ai-mr-reviewer
 ```
 
 ## GitLab Token Setup
@@ -213,7 +210,7 @@ jobs:
 ### Build
 
 ```bash
-go build ./...
+go install github.com/adlandh/ai-mr-reviewer@latest
 ```
 
 ### Test
@@ -225,7 +222,6 @@ go test ./...
 ### Lint
 
 ```bash
-go vet ./...
 golangci-lint run
 ```
 

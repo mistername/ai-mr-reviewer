@@ -17,10 +17,9 @@ ai-code-review:
     OLLAMA_URL: "http://ollama:11434"
     OLLAMA_MODEL: "llama3.2"
   before_script:
-    - apk add --no-cache git
-    - go build -o /app/gitlab_mr_reviewer ./cmd
+    - go install github.com/adlandh/ai-mr-reviewer@latest
   script:
-    - /app/gitlab_mr_reviewer
+    - ai-mr-reviewer
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_MERGE_REQUEST_IID
