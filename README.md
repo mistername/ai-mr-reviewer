@@ -182,7 +182,7 @@ jobs:
           VCS_PROVIDER: github
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_OWNER: ${{ github.repository_owner }}
-          GITHUB_REPO: ${{ github.repository }}
+          GITHUB_REPO: ${{ github.event.repository.name }}
           GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
           CI_COMMIT_SHA: ${{ github.sha }}
           AI_PROVIDER: openai
