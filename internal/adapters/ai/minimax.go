@@ -22,7 +22,7 @@ type minimaxRequest struct {
 	Model       string    `json:"model"`
 	Messages    []message `json:"messages"`
 	Stream      bool      `json:"stream"`
-	Temperature float64   `json:"temperature,omitempty"`
+	Temperature float64   `json:"temperature"`
 }
 
 type minimaxResponse struct {
@@ -49,7 +49,7 @@ func (c *MiniMaxClient) ReviewCode(filePath, diff, language string) (string, err
 			Content: prompt,
 		}},
 		Stream:      false,
-		Temperature: 0.7,
+		Temperature: 0,
 	}
 
 	body, err := json.Marshal(reqBody)

@@ -19,9 +19,10 @@ type OpenAIClient struct {
 }
 
 type openaiRequest struct {
-	Model    string    `json:"model"`
-	Messages []message `json:"messages"`
-	Stream   bool      `json:"stream"`
+	Model       string    `json:"model"`
+	Messages    []message `json:"messages"`
+	Stream      bool      `json:"stream"`
+	Temperature float64   `json:"temperature"`
 }
 
 type openaiResponse struct {
@@ -44,7 +45,8 @@ func (c *OpenAIClient) ReviewCode(filePath, diff, language string) (string, erro
 			Role:    "user",
 			Content: prompt,
 		}},
-		Stream: false,
+		Stream:      false,
+		Temperature: 0,
 	}
 
 	body, err := json.Marshal(reqBody)

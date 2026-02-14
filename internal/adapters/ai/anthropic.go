@@ -19,9 +19,10 @@ type AnthropicClient struct {
 }
 
 type anthropicRequest struct {
-	Model     string    `json:"model"`
-	Messages  []message `json:"messages"`
-	MaxTokens int       `json:"max_tokens"`
+	Model       string    `json:"model"`
+	Messages    []message `json:"messages"`
+	MaxTokens   int       `json:"max_tokens"`
+	Temperature float64   `json:"temperature"`
 }
 
 type anthropicResponse struct {
@@ -44,7 +45,8 @@ func (c *AnthropicClient) ReviewCode(filePath, diff, language string) (string, e
 			Role:    "user",
 			Content: prompt,
 		}},
-		MaxTokens: 4096,
+		MaxTokens:   4096,
+		Temperature: 0,
 	}
 
 	body, err := json.Marshal(reqBody)
