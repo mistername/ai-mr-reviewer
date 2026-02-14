@@ -2,6 +2,7 @@ package application
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -56,6 +57,12 @@ func NewReviewer(config domain.ConfigPort, mrProvider domain.MRProviderPort, aiP
 }
 
 func (r *Reviewer) Run() error {
+	if r.config.GetDeleteBotComments() {
+		if err := r.mrProvider.DeleteBotCommentsExceptResolved(); err != nil {
+			r.logger.Warn("cannot delete bot comments", zap.Error(err))
+		}
+	}
+
 	existing, err := r.mrProvider.GetExistingComments()
 	if err != nil {
 		r.logger.Warn("cannot read existing comments", zap.Error(err))
@@ -68,26 +75,38 @@ func (r *Reviewer) Run() error {
 		return fmt.Errorf("get MR changes: %w", err)
 	}
 
+	var diffErrors error
+
 	for _, d := range r.filterNewDiffs(diffs, existing) {
 		if err := r.reviewDiff(d); err != nil {
+			diffErrors = errors.Join(diffErrors, fmt.Errorf("review failed %s: %w", d.NewPath, err))
 			r.logger.Warn("review failed", zap.String("path", d.NewPath), zap.Error(err))
 		}
 	}
 
-	return nil
+	return diffErrors
 }
 
 func (r *Reviewer) filterNewDiffs(diffs []domain.Diff, existing map[string][]string) []domain.Diff {
 	filtered := make([]domain.Diff, 0, len(diffs))
 
 	for _, d := range diffs {
-		key := fmt.Sprintf("%s:1", d.NewPath)
-		if _, ok := existing[key]; !ok {
+		if !hasExistingComments(d.NewPath, existing) {
 			filtered = append(filtered, d)
 		}
 	}
 
 	return filtered
+}
+
+func hasExistingComments(path string, existing map[string][]string) bool {
+	for key := range existing {
+		if strings.HasPrefix(key, path+":") {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (r *Reviewer) reviewDiff(d domain.Diff) error {
@@ -101,8 +120,9 @@ func (r *Reviewer) reviewDiff(d domain.Diff) error {
 		return fmt.Errorf("parse AI review response: %w", err)
 	}
 
+	prefix := r.config.GetCommentPrefix()
 	for _, issue := range issues {
-		body := fmt.Sprintf("**%s**: %s", strings.ToUpper(issue.Severity), issue.Message)
+		body := fmt.Sprintf("%s:**%s**: %s", prefix, strings.ToUpper(issue.Severity), issue.Message)
 		if err := r.mrProvider.AddMergeRequestDiscussion(d.NewPath, issue.Line, body); err != nil {
 			r.logger.Warn("failed to add comment", zap.String("path", d.NewPath), zap.Int("line", issue.Line), zap.Error(err))
 		}
@@ -113,19 +133,97 @@ func (r *Reviewer) reviewDiff(d domain.Diff) error {
 
 func parseReviewResponse(response string) ([]domain.ReviewIssue, error) {
 	trimmed := strings.TrimSpace(response)
-	start := strings.Index(trimmed, "{")
 
-	end := strings.LastIndex(trimmed, "}")
-	if start == -1 || end == -1 {
-		return nil, fmt.Errorf("json object not found")
+	jsonStr := extractJSON(trimmed)
+	if jsonStr == "" {
+		return nil, nil
 	}
 
 	var parsed reviewResponse
-	if err := json.Unmarshal([]byte(trimmed[start:end+1]), &parsed); err != nil {
-		return nil, fmt.Errorf("unmarshal response: %w", err)
+	if err := json.Unmarshal([]byte(jsonStr), &parsed); err != nil {
+		return nil, nil
 	}
 
 	return parsed.Issues, nil
+}
+
+func extractJSON(s string) string {
+	if idx := strings.Index(s, "```json"); idx != -1 {
+		end := strings.Index(s[idx+7:], "```")
+		if end != -1 {
+			return s[idx+7 : idx+7+end]
+		}
+	}
+
+	if idx := strings.Index(s, "```"); idx != -1 {
+		content := s[idx+3:]
+		if end := strings.Index(content, "```"); end != -1 {
+			extracted := strings.TrimSpace(content[:end])
+			if isJSON(extracted) {
+				return extracted
+			}
+		}
+	}
+
+	start := findJSONStart(s)
+	if start == -1 {
+		return ""
+	}
+
+	end := findMatchingBracket(s, start)
+	if end == -1 {
+		return ""
+	}
+
+	return s[start : end+1]
+}
+
+func findJSONStart(s string) int {
+	openBrace := strings.Index(s, "{")
+	openBracket := strings.Index(s, "[")
+
+	switch {
+	case openBrace != -1 && openBracket != -1:
+		return min(openBrace, openBracket)
+	case openBrace != -1:
+		return openBrace
+	case openBracket != -1:
+		return openBracket
+	default:
+		return -1
+	}
+}
+
+func isJSON(s string) bool {
+	s = strings.TrimSpace(s)
+
+	return (strings.HasPrefix(s, "{") && strings.HasSuffix(s, "}")) ||
+		(strings.HasPrefix(s, "[") && strings.HasSuffix(s, "]"))
+}
+
+func findMatchingBracket(s string, start int) int {
+	openChar := rune(s[start])
+	closeChar := openChar
+
+	if openChar == '{' {
+		closeChar = '}'
+	}
+
+	count := 0
+
+	for i, r := range s[start:] {
+		switch r {
+		case openChar:
+			count++
+		case closeChar:
+			count--
+			if count == 0 {
+				return start + i
+			}
+		}
+	}
+
+	return -1
 }
 
 func detectLanguage(filename string) string {

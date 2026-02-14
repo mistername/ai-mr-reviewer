@@ -5,24 +5,26 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
-	"github.com/google/go-github/v68/github"
+	"github.com/google/go-github/v82/github"
 
 	"github.com/adlandh/ai-mr-reviewer/internal/domain"
 )
 
 type Client struct {
-	client    *github.Client
-	owner     string
-	repo      string
-	commitSHA string
-	prNumber  int
+	client        *github.Client
+	commentPrefix string
+	owner         string
+	repo          string
+	commitSHA     string
+	prNumber      int
 }
 
-func NewClient(token, owner, repo, prNumber, commitSHA string) (*Client, error) {
+func NewClient(token, owner, repo, prNumber, commitSHA, commentPrefix string) (*Client, error) {
 	httpClient := &http.Client{}
 	client := github.NewClient(httpClient)
-	client.WithAuthToken(token)
+	client = client.WithAuthToken(token)
 
 	prNum, err := strconv.Atoi(prNumber)
 	if err != nil {
@@ -30,11 +32,12 @@ func NewClient(token, owner, repo, prNumber, commitSHA string) (*Client, error) 
 	}
 
 	return &Client{
-		client:    client,
-		owner:     owner,
-		repo:      repo,
-		prNumber:  prNum,
-		commitSHA: commitSHA,
+		client:        client,
+		owner:         owner,
+		repo:          repo,
+		prNumber:      prNum,
+		commitSHA:     commitSHA,
+		commentPrefix: commentPrefix,
 	}, nil
 }
 
@@ -63,14 +66,14 @@ func (c *Client) GetMergeRequestChanges() ([]domain.Diff, error) {
 }
 
 func (c *Client) GetExistingComments() (map[string][]string, error) {
-	comments, _, err := c.client.PullRequests.ListComments(context.Background(), c.owner, c.repo, c.prNumber, &github.PullRequestListCommentsOptions{})
-	if err != nil {
-		return nil, fmt.Errorf("failed to list PR comments: %w", err)
-	}
-
 	existing := make(map[string][]string)
 
-	for _, comment := range comments {
+	reviewComments, _, err := c.client.PullRequests.ListComments(context.Background(), c.owner, c.repo, c.prNumber, &github.PullRequestListCommentsOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list PR review comments: %w", err)
+	}
+
+	for _, comment := range reviewComments {
 		if comment.Path != nil && comment.Line != nil {
 			key := fmt.Sprintf("%s:%d", *comment.Path, *comment.Line)
 			existing[key] = append(existing[key], *comment.Body)
@@ -91,7 +94,72 @@ func (c *Client) AddMergeRequestDiscussion(file string, line int, note string) e
 
 	_, _, err := c.client.PullRequests.CreateComment(context.Background(), c.owner, c.repo, c.prNumber, prComment)
 	if err != nil {
-		return fmt.Errorf("failed to add PR comment: %w", err)
+		body := fmt.Sprintf("**File: %s**\n\n%s", file, note)
+		issueComment := &github.IssueComment{
+			Body: &body,
+		}
+
+		_, _, err = c.client.Issues.CreateComment(context.Background(), c.owner, c.repo, c.prNumber, issueComment)
+		if err != nil {
+			return fmt.Errorf("failed to add PR comment: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func (c *Client) DeleteBotCommentsExceptResolved() error {
+	err := c.deleteBotReviewComments()
+	if err != nil {
+		return err
+	}
+
+	return c.deleteBotIssueComments()
+}
+
+func (c *Client) deleteBotReviewComments() error {
+	reviewComments, _, err := c.client.PullRequests.ListComments(context.Background(), c.owner, c.repo, c.prNumber, &github.PullRequestListCommentsOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to list PR review comments: %w", err)
+	}
+
+	for _, comment := range reviewComments {
+		if comment.ID == nil || comment.Body == nil {
+			continue
+		}
+
+		if !strings.HasPrefix(*comment.Body, c.commentPrefix+":") {
+			continue
+		}
+
+		_, err = c.client.PullRequests.DeleteComment(context.Background(), c.owner, c.repo, *comment.ID)
+		if err != nil {
+			return fmt.Errorf("failed to delete PR review comment: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func (c *Client) deleteBotIssueComments() error {
+	issueComments, _, err := c.client.Issues.ListComments(context.Background(), c.owner, c.repo, c.prNumber, &github.IssueListCommentsOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to list PR issue comments: %w", err)
+	}
+
+	for _, comment := range issueComments {
+		if comment.ID == nil || comment.Body == nil {
+			continue
+		}
+
+		if !strings.HasPrefix(*comment.Body, c.commentPrefix+":") {
+			continue
+		}
+
+		_, err = c.client.Issues.DeleteComment(context.Background(), c.owner, c.repo, *comment.ID)
+		if err != nil {
+			return fmt.Errorf("failed to delete PR issue comment: %w", err)
+		}
 	}
 
 	return nil

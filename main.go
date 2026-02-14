@@ -97,6 +97,7 @@ func newGitHubClient(cfg domain.ConfigPort) (domain.MRProviderPort, error) {
 		cfg.GetGitHubRepo(),
 		cfg.GetGitHubPRNumber(),
 		cfg.GetCommitSHA(),
+		cfg.GetCommentPrefix(),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("create GitHub client: %w", err)

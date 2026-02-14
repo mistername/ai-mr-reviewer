@@ -27,7 +27,14 @@ func NewAIProvider(config domain.ConfigPort) (domain.AIProviderPort, error) {
 
 		return NewAnthropicClient(config.GetAnthropicAuthToken(), config.GetAnthropicBaseURL(), config.GetAnthropicModel()), nil
 
+	case "minimax":
+		if config.GetMiniMaxAPIKey() == "" {
+			return nil, fmt.Errorf("MINIMAX_API_KEY is required for minimax provider")
+		}
+
+		return NewMiniMaxClient(config.GetMiniMaxAPIKey(), config.GetMiniMaxBaseURL(), config.GetMiniMaxModel()), nil
+
 	default:
-		return nil, fmt.Errorf("unsupported AI provider: %s (supported: ollama, openai, anthropic)", provider)
+		return nil, fmt.Errorf("unsupported AI provider: %s (supported: ollama, openai, anthropic, minimax)", provider)
 	}
 }

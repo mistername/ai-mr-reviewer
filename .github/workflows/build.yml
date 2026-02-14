@@ -8,12 +8,15 @@ jobs:
     name: Publish Release
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-go@v6
+      - name: Checkout Code
+        uses: actions/checkout@v6
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
         with:
           go-version: '1.25'
-          cache-dependency-path: |
-            go.sum
-      - uses: actions/checkout@v6
+          cache: true
+
       - name: Generate Code
         run: go generate ./...
       - uses: ko-build/setup-ko@v0.9

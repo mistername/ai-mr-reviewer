@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"github.com/adlandh/ai-mr-reviewer/internal/domain"
 )
@@ -51,7 +52,9 @@ func (c *AnthropicClient) ReviewCode(filePath, diff, language string) (string, e
 		return "", fmt.Errorf("marshal request: %w", err)
 	}
 
-	httpReq, err := http.NewRequestWithContext(context.Background(), http.MethodPost, c.baseURL+"messages", bytes.NewReader(body))
+	endpoint, _ := url.JoinPath(c.baseURL, "messages")
+
+	httpReq, err := http.NewRequestWithContext(context.Background(), http.MethodPost, endpoint, bytes.NewReader(body))
 	if err != nil {
 		return "", fmt.Errorf("create request: %w", err)
 	}

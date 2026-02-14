@@ -31,6 +31,11 @@ func (c *configMock) GetOpenAIModel() string             { return "gpt-4" }
 func (c *configMock) GetAnthropicAuthToken() string      { return "" }
 func (c *configMock) GetAnthropicBaseURL() string        { return "https://api.anthropic.com/v1/" }
 func (c *configMock) GetAnthropicModel() string          { return "claude-sonnet-4-20250514" }
+func (c *configMock) GetDeleteBotComments() bool         { return false }
+func (c *configMock) GetCommentPrefix() string           { return "ai-mr-reviewer" }
+func (c *configMock) GetMiniMaxAPIKey() string           { return "" }
+func (c *configMock) GetMiniMaxBaseURL() string          { return "https://api.minimax.chat/v1" }
+func (c *configMock) GetMiniMaxModel() string            { return "MiniMax-M2.5" }
 
 var _ domain.ConfigPort = (*configMock)(nil)
 
@@ -58,6 +63,7 @@ func (m *mrProviderMock) AddMergeRequestDiscussion(file string, line int, note s
 	m.addedDiscussions = append(m.addedDiscussions, addedDiscussion{file: file, line: line, body: note})
 	return nil
 }
+func (m *mrProviderMock) DeleteBotCommentsExceptResolved() error { return nil }
 
 var _ domain.MRProviderPort = (*mrProviderMock)(nil)
 

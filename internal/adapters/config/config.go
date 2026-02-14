@@ -8,8 +8,8 @@ import (
 )
 
 type Config struct {
-	VCSProvider             string `env:"VCS_PROVIDER,notEmpty" envDefault:"gitlab"`
-	GitLabURL               string `env:"CI_SERVER_URL" envDefault:"https://gitlab.com"`
+	GitHubPRNumber          string `env:"GITHUB_PR_NUMBER"`
+	AIProvider              string `env:"AI_PROVIDER,notEmpty" envDefault:"ollama"`
 	GitLabToken             string `env:"GITLAB_TOKEN"`
 	ProjectID               string `env:"CI_PROJECT_ID"`
 	MergeRequestIID         string `env:"CI_MERGE_REQUEST_IID"`
@@ -17,17 +17,22 @@ type Config struct {
 	MergeRequestDiffBaseSHA string `env:"CI_MERGE_REQUEST_DIFF_BASE_SHA"`
 	GitHubToken             string `env:"GITHUB_TOKEN"`
 	GitHubOwner             string `env:"GITHUB_OWNER"`
-	GitHubRepo              string `env:"GITHUB_REPO"`
-	GitHubPRNumber          string `env:"GITHUB_PR_NUMBER"`
-	AIProvider              string `env:"AI_PROVIDER,notEmpty" envDefault:"ollama"`
 	OllamaURL               string `env:"OLLAMA_URL" envDefault:"http://localhost:11434"`
+	GitLabURL               string `env:"CI_SERVER_URL" envDefault:"https://gitlab.com"`
+	VCSProvider             string `env:"VCS_PROVIDER,notEmpty" envDefault:"gitlab"`
+	GitHubRepo              string `env:"GITHUB_REPO"`
 	OllamaModel             string `env:"OLLAMA_MODEL" envDefault:"llama3.2"`
 	OpenAIAPIKey            string `env:"OPENAI_API_KEY"`
 	OpenAIBaseURL           string `env:"OPENAI_BASE_URL" envDefault:"https://api.openai.com/v1"`
-	OpenAIModel             string `env:"OPENAI_MODEL" envDefault:"gpt-4o"`
+	OpenAIModel             string `env:"OPENAI_MODEL" envDefault:"GPT-5.2-Codex"`
 	AnthropicAuthToken      string `env:"ANTHROPIC_AUTH_TOKEN"`
 	AnthropicBaseURL        string `env:"ANTHROPIC_BASE_URL" envDefault:"https://api.anthropic.com/v1/"`
 	AnthropicModel          string `env:"ANTHROPIC_MODEL" envDefault:"claude-sonnet-4-20250514"`
+	MiniMaxAPIKey           string `env:"MINIMAX_API_KEY"`
+	MiniMaxBaseURL          string `env:"MINIMAX_BASE_URL" envDefault:"https://api.minimax.io/v1"`
+	MiniMaxModel            string `env:"MINIMAX_MODEL" envDefault:"MiniMax-M2.5"`
+	CommentPrefix           string `env:"COMMENT_PREFIX,notEmpty" envDefault:"ai-mr-reviewer"`
+	DeleteBotComments       bool   `env:"DELETE_BOT_COMMENTS" envDefault:"true"`
 }
 
 func New() (*Config, error) {
@@ -117,6 +122,26 @@ func (c *Config) GetAnthropicBaseURL() string {
 
 func (c *Config) GetAnthropicModel() string {
 	return c.AnthropicModel
+}
+
+func (c *Config) GetMiniMaxAPIKey() string {
+	return c.MiniMaxAPIKey
+}
+
+func (c *Config) GetMiniMaxBaseURL() string {
+	return c.MiniMaxBaseURL
+}
+
+func (c *Config) GetMiniMaxModel() string {
+	return c.MiniMaxModel
+}
+
+func (c *Config) GetDeleteBotComments() bool {
+	return c.DeleteBotComments
+}
+
+func (c *Config) GetCommentPrefix() string {
+	return c.CommentPrefix
 }
 
 var _ domain.ConfigPort = (*Config)(nil)

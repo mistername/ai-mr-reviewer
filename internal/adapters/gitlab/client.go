@@ -2,6 +2,7 @@ package gitlab
 
 import (
 	"fmt"
+	"strings"
 
 	gitlab "gitlab.com/gitlab-org/api/client-go"
 
@@ -86,11 +87,13 @@ func (c *Client) AddMergeRequestDiscussion(file string, line int, note string) e
 
 	line64 := int64(line)
 
+	noteWithPrefix := c.config.GetCommentPrefix() + ": " + note
+
 	_, _, err := c.git.Discussions.CreateMergeRequestDiscussion(
 		c.projectID,
 		int64(c.iid),
 		&gitlab.CreateMergeRequestDiscussionOptions{
-			Body: &note,
+			Body: &noteWithPrefix,
 			Position: &gitlab.PositionOptions{
 				PositionType: &positionType,
 				NewLine:      &line64,
@@ -104,6 +107,34 @@ func (c *Client) AddMergeRequestDiscussion(file string, line int, note string) e
 	)
 	if err != nil {
 		return fmt.Errorf("failed to add discussion: %w", err)
+	}
+
+	return nil
+}
+
+func (c *Client) DeleteBotCommentsExceptResolved() error {
+	notes, _, err := c.git.Notes.ListMergeRequestNotes(
+		c.projectID,
+		int64(c.iid),
+		&gitlab.ListMergeRequestNotesOptions{},
+	)
+	if err != nil {
+		return fmt.Errorf("failed to list notes: %w", err)
+	}
+
+	for _, note := range notes {
+		if note.System || note.Resolved {
+			continue
+		}
+
+		if !strings.HasPrefix(note.Body, c.config.GetCommentPrefix()+":") {
+			continue
+		}
+
+		_, err := c.git.Notes.DeleteMergeRequestNote(c.projectID, int64(c.iid), note.ID)
+		if err != nil {
+			return fmt.Errorf("failed to delete note: %w", err)
+		}
 	}
 
 	return nil
