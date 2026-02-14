@@ -142,12 +142,12 @@ func parseReviewResponse(response string) ([]domain.ReviewIssue, error) {
 
 	jsonStr := extractJSON(trimmed)
 	if jsonStr == "" {
-		return nil, nil
+		return nil, fmt.Errorf("no JSON found in response")
 	}
 
 	var parsed reviewResponse
 	if err := json.Unmarshal([]byte(jsonStr), &parsed); err != nil {
-		return nil, nil
+		return nil, fmt.Errorf("unmarshal response: %w", err)
 	}
 
 	return parsed.Issues, nil
