@@ -8,7 +8,7 @@ type MRProviderPort interface {
 }
 
 type AIProviderPort interface {
-	ReviewCode(filePath, diff, language string) (string, error)
+	ReviewCode(diff string) (string, error)
 }
 
 type ConfigPort interface {

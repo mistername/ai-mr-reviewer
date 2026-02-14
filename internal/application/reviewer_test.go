@@ -72,14 +72,14 @@ type ollamaMock struct {
 	err      error
 }
 
-func (m *ollamaMock) ReviewCode(string, string, string) (string, error) { return m.response, m.err }
+func (m *ollamaMock) ReviewCode(string) (string, error) { return m.response, m.err }
 
 func TestParseReviewResponse(t *testing.T) {
-	issues, err := parseReviewResponse("some text {\"issues\":[{\"line\":3,\"severity\":\"warning\",\"message\":\"x\"}]} tail")
+	issues, err := parseReviewResponse("some text {\"issues\":[{\"file\":\"a.go\",\"line\":3,\"severity\":\"warning\",\"message\":\"x\"}]} tail")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(issues) != 1 || issues[0].Line != 3 {
+	if len(issues) != 1 || issues[0].Line != 3 || issues[0].FilePath != "a.go" {
 		t.Fatalf("unexpected issues: %+v", issues)
 	}
 }
@@ -97,14 +97,14 @@ func TestRunReviewsOnlyNewDiffs(t *testing.T) {
 	c := &configMock{iid: "5"}
 	g := &mrProviderMock{
 		comments: map[string][]string{
-			"already.go:1": {"exists"},
+			"already.go:1": {"ai-mr-reviewer:**WARNING**: fix it"},
 		},
 		diffs: []domain.Diff{
 			{NewPath: "already.go", Content: "diff1"},
 			{NewPath: "new.go", Content: "diff2"},
 		},
 	}
-	o := &ollamaMock{response: `{"issues":[{"line":10,"severity":"warning","message":"fix it"}]}`}
+	o := &ollamaMock{response: `{"issues":[{"file":"new.go","line":10,"severity":"warning","message":"fix it"}]}`}
 	r := NewReviewer(c, g, o, zap.NewNop())
 
 	if err := r.Run(); err != nil {
@@ -125,7 +125,7 @@ func TestRunReviewsNewDiffsNoFilter(t *testing.T) {
 			{NewPath: "new.go", Content: "diff2"},
 		},
 	}
-	o := &ollamaMock{response: `{"issues":[{"line":10,"severity":"warning","message":"fix it"}]}`}
+	o := &ollamaMock{response: `{"issues":[{"file":"new.go","line":10,"severity":"warning","message":"fix it"}]}`}
 	r := NewReviewer(c, g, o, zap.NewNop())
 
 	if err := r.Run(); err != nil {

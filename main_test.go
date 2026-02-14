@@ -84,7 +84,7 @@ var _ domain.MRProviderPort = (*mrProviderMockForTest)(nil)
 
 type aiProviderMockForTest struct{}
 
-func (o *aiProviderMockForTest) ReviewCode(string, string, string) (string, error) {
+func (o *aiProviderMockForTest) ReviewCode(string) (string, error) {
 	return `{"issues":[]}`, nil
 }
 

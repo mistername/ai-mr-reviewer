@@ -2,9 +2,11 @@ package application
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
+	"maps"
 	"path/filepath"
+	"slices"
+	"sort"
 	"strings"
 
 	"github.com/adlandh/ai-mr-reviewer/internal/domain"
@@ -19,7 +21,15 @@ type Reviewer struct {
 }
 
 type reviewResponse struct {
-	Issues []domain.ReviewIssue `json:"issues"`
+	Issues []reviewIssuePayload `json:"issues"`
+}
+
+type reviewIssuePayload struct {
+	FilePath string `json:"file"`
+	Path     string `json:"path"`
+	Severity string `json:"severity"`
+	Message  string `json:"message"`
+	Line     int    `json:"line"`
 }
 
 var languageMap = map[string]string{
@@ -75,23 +85,25 @@ func (r *Reviewer) Run() error {
 		return fmt.Errorf("get MR changes: %w", err)
 	}
 
-	var diffErrors error
+	prefix := r.config.GetCommentPrefix() + ":"
 
-	for _, d := range r.filterNewDiffs(diffs, existing) {
-		if err := r.reviewDiff(d); err != nil {
-			diffErrors = errors.Join(diffErrors, fmt.Errorf("review failed %s: %w", d.NewPath, err))
-			r.logger.Warn("review failed", zap.String("path", d.NewPath), zap.Error(err))
-		}
+	filteredDiffs := r.filterNewDiffs(diffs, existing, prefix)
+	if len(filteredDiffs) == 0 {
+		return nil
 	}
 
-	return diffErrors
+	if err := r.reviewDiffs(filteredDiffs); err != nil {
+		return fmt.Errorf("review diffs: %w", err)
+	}
+
+	return nil
 }
 
-func (r *Reviewer) filterNewDiffs(diffs []domain.Diff, existing map[string][]string) []domain.Diff {
+func (r *Reviewer) filterNewDiffs(diffs []domain.Diff, existing map[string][]string, prefix string) []domain.Diff {
 	filtered := make([]domain.Diff, 0, len(diffs))
 
 	for _, d := range diffs {
-		if !hasExistingComments(d.NewPath, existing) {
+		if !hasExistingComments(d.NewPath, existing, prefix) {
 			filtered = append(filtered, d)
 		}
 	}
@@ -99,32 +111,56 @@ func (r *Reviewer) filterNewDiffs(diffs []domain.Diff, existing map[string][]str
 	return filtered
 }
 
-func hasExistingComments(path string, existing map[string][]string) bool {
-	for key := range existing {
+func hasExistingComments(path string, existing map[string][]string, prefix string) bool {
+	for key, bodies := range existing {
 		if strings.HasPrefix(key, path+":") {
-			return true
+			for _, body := range bodies {
+				if strings.HasPrefix(body, prefix) {
+					return true
+				}
+			}
 		}
 	}
 
 	return false
 }
 
-func (r *Reviewer) reviewDiff(d domain.Diff) error {
-	reviewText, err := r.aiProvider.ReviewCode(filepath.Base(d.NewPath), d.Content, detectLanguage(d.NewPath))
+func (r *Reviewer) reviewDiffs(diffs []domain.Diff) error {
+	combinedDiff := buildCombinedDiff(diffs)
+
+	reviewText, err := r.aiProvider.ReviewCode(combinedDiff)
 	if err != nil {
 		return fmt.Errorf("review code: %w", err)
 	}
 
 	issues, err := parseReviewResponse(reviewText)
 	if err != nil {
-		return fmt.Errorf("parse AI review response: %w", err)
+		return fmt.Errorf("parse review response: %w", err)
+	}
+
+	knownFiles := make(map[string]struct{}, len(diffs))
+	for _, d := range diffs {
+		knownFiles[d.NewPath] = struct{}{}
 	}
 
 	prefix := r.config.GetCommentPrefix()
+
 	for _, issue := range issues {
+		filePath := issue.FilePath
+		if filePath == "" && len(knownFiles) == 1 {
+			for onlyPath := range knownFiles {
+				filePath = onlyPath
+			}
+		}
+
+		if _, ok := knownFiles[filePath]; !ok {
+			r.logger.Warn("skip issue for unknown file", zap.String("file", issue.FilePath), zap.Int("line", issue.Line))
+			continue
+		}
+
 		body := fmt.Sprintf("%s:**%s**: %s", prefix, strings.ToUpper(issue.Severity), issue.Message)
-		if err := r.mrProvider.AddMergeRequestDiscussion(d.NewPath, issue.Line, body); err != nil {
-			r.logger.Warn("failed to add comment", zap.String("path", d.NewPath), zap.Int("line", issue.Line), zap.Error(err))
+		if err := r.mrProvider.AddMergeRequestDiscussion(filePath, issue.Line, body); err != nil {
+			r.logger.Warn("failed to add comment", zap.String("path", filePath), zap.Int("line", issue.Line), zap.Error(err))
 		}
 	}
 
@@ -141,10 +177,55 @@ func parseReviewResponse(response string) ([]domain.ReviewIssue, error) {
 
 	var parsed reviewResponse
 	if err := json.Unmarshal([]byte(jsonStr), &parsed); err != nil {
-		return nil, nil
+		return nil, fmt.Errorf("unmarshal response: %w", err)
 	}
 
-	return parsed.Issues, nil
+	issues := make([]domain.ReviewIssue, 0, len(parsed.Issues))
+	for _, issue := range parsed.Issues {
+		filePath := issue.FilePath
+		if filePath == "" {
+			filePath = issue.Path
+		}
+
+		issues = append(issues, domain.ReviewIssue{
+			FilePath: filePath,
+			Severity: issue.Severity,
+			Message:  issue.Message,
+			Line:     issue.Line,
+		})
+	}
+
+	return issues, nil
+}
+
+func buildCombinedDiff(diffs []domain.Diff) string {
+	uniquePaths := make(map[string]struct{}, len(diffs))
+	for _, d := range diffs {
+		uniquePaths[d.NewPath] = struct{}{}
+	}
+
+	paths := slices.Collect(maps.Keys(uniquePaths))
+	sort.Strings(paths)
+
+	var builder strings.Builder
+
+	for _, path := range paths {
+		for _, d := range diffs {
+			if d.NewPath != path {
+				continue
+			}
+
+			builder.WriteString("File: ")
+			builder.WriteString(d.NewPath)
+			builder.WriteString("\nLanguage: ")
+			builder.WriteString(detectLanguage(d.NewPath))
+			builder.WriteString("\nDiff:\n")
+			builder.WriteString(d.Content)
+			builder.WriteString("\n\n")
+		}
+	}
+
+	return strings.TrimSpace(builder.String())
 }
 
 func extractJSON(s string) string {

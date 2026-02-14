@@ -28,6 +28,6 @@ jobs:
           GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
           CI_COMMIT_SHA: ${{ github.sha }}
           AI_PROVIDER: minimax
-          MINIMAX_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          MINIMAX_API_KEY: ${{ secrets.MINIMAX_API_KEY }}
           DELETE_BOT_COMMENTS: true
         run: go install . && ai-mr-reviewer

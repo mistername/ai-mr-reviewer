@@ -19,9 +19,10 @@ type AnthropicClient struct {
 }
 
 type anthropicRequest struct {
-	Model     string    `json:"model"`
-	Messages  []message `json:"messages"`
-	MaxTokens int       `json:"max_tokens"`
+	Model       string    `json:"model"`
+	Messages    []message `json:"messages"`
+	MaxTokens   int       `json:"max_tokens"`
+	Temperature float64   `json:"temperature"`
 }
 
 type anthropicResponse struct {
@@ -36,15 +37,16 @@ func NewAnthropicClient(apiKey, baseURL, model string) *AnthropicClient {
 	return &AnthropicClient{apiKey: apiKey, baseURL: baseURL, model: model, http: &http.Client{}}
 }
 
-func (c *AnthropicClient) ReviewCode(filePath, diff, language string) (string, error) {
-	prompt := buildReviewPrompt(filePath, diff, language)
+func (c *AnthropicClient) ReviewCode(diff string) (string, error) {
+	prompt := domain.BuildReviewPrompt(diff)
 	reqBody := anthropicRequest{
 		Model: c.model,
 		Messages: []message{{
 			Role:    "user",
 			Content: prompt,
 		}},
-		MaxTokens: 4096,
+		MaxTokens:   4096,
+		Temperature: 0,
 	}
 
 	body, err := json.Marshal(reqBody)
