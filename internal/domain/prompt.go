@@ -17,10 +17,11 @@ Validation rules (must follow):
 - Every issue must be directly supported by specific added/modified lines in the Diff.
 - No external assumptions. When uncertain, omit the issue.
 - Line numbers must refer to the NEW file.
+- File names must be exact and match file names from the provided diff sections.
 - Output JSON only. No extra text.
 
 Return ONLY valid JSON:
-{ "issues": [ { "line": <int>, "severity": "error|warning|info", "message": "<short grounded explanation with file + line range>" } ] }
+{ "issues": [ { "file": "<path>", "line": <int>, "severity": "error|warning|info", "message": "<short grounded explanation>" } ] }
 If none: {"issues": []}
 
 File: %s

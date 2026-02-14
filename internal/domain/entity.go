@@ -14,6 +14,7 @@ type Diff struct {
 }
 
 type ReviewIssue struct {
+	FilePath string
 	Severity string
 	Message  string
 	Line     int
