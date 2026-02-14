@@ -28,6 +28,7 @@ type Config struct {
 	AnthropicAuthToken      string `env:"ANTHROPIC_AUTH_TOKEN"`
 	AnthropicBaseURL        string `env:"ANTHROPIC_BASE_URL" envDefault:"https://api.anthropic.com/v1/"`
 	AnthropicModel          string `env:"ANTHROPIC_MODEL" envDefault:"claude-sonnet-4-20250514"`
+	DeleteBotComments       bool   `env:"DELETE_BOT_COMMENTS"`
 }
 
 func New() (*Config, error) {
@@ -117,6 +118,10 @@ func (c *Config) GetAnthropicBaseURL() string {
 
 func (c *Config) GetAnthropicModel() string {
 	return c.AnthropicModel
+}
+
+func (c *Config) GetDeleteBotComments() bool {
+	return c.DeleteBotComments
 }
 
 var _ domain.ConfigPort = (*Config)(nil)

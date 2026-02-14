@@ -57,6 +57,12 @@ func NewReviewer(config domain.ConfigPort, mrProvider domain.MRProviderPort, aiP
 }
 
 func (r *Reviewer) Run() error {
+	if r.config.GetDeleteBotComments() {
+		if err := r.mrProvider.DeleteBotCommentsExceptResolved(); err != nil {
+			r.logger.Warn("cannot delete bot comments", zap.Error(err))
+		}
+	}
+
 	existing, err := r.mrProvider.GetExistingComments()
 	if err != nil {
 		r.logger.Warn("cannot read existing comments", zap.Error(err))

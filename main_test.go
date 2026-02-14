@@ -78,6 +78,7 @@ func (g *mrProviderMockForTest) GetExistingComments() (map[string][]string, erro
 	return nil, nil
 }
 func (g *mrProviderMockForTest) AddMergeRequestDiscussion(string, int, string) error { return nil }
+func (g *mrProviderMockForTest) DeleteBotCommentsExceptResolved() error              { return nil }
 
 var _ domain.MRProviderPort = (*mrProviderMockForTest)(nil)
 
@@ -111,6 +112,7 @@ func (c *configMockForTest) GetOpenAIModel() string             { return "gpt-4o
 func (c *configMockForTest) GetAnthropicAuthToken() string      { return "" }
 func (c *configMockForTest) GetAnthropicBaseURL() string        { return "https://api.anthropic.com/v1/" }
 func (c *configMockForTest) GetAnthropicModel() string          { return "claude-sonnet-4-20250514" }
+func (c *configMockForTest) GetDeleteBotComments() bool         { return false }
 
 var _ domain.ConfigPort = (*configMockForTest)(nil)
 

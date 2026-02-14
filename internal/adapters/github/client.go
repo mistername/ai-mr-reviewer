@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/google/go-github/v68/github"
 
@@ -110,6 +111,63 @@ func (c *Client) AddMergeRequestDiscussion(file string, line int, note string) e
 		_, _, err = c.client.Issues.CreateComment(context.Background(), c.owner, c.repo, c.prNumber, issueComment)
 		if err != nil {
 			return fmt.Errorf("failed to add PR comment: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func (c *Client) DeleteBotCommentsExceptResolved() error {
+	err := c.deleteBotReviewComments()
+	if err != nil {
+		return err
+	}
+
+	return c.deleteBotIssueComments()
+}
+
+func (c *Client) deleteBotReviewComments() error {
+	reviewComments, _, err := c.client.PullRequests.ListComments(context.Background(), c.owner, c.repo, c.prNumber, &github.PullRequestListCommentsOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to list PR review comments: %w", err)
+	}
+
+	for _, comment := range reviewComments {
+		if comment.ID == nil || comment.User == nil {
+			continue
+		}
+
+		if !strings.Contains(comment.User.GetLogin(), "bot") {
+			continue
+		}
+
+		_, err = c.client.PullRequests.DeleteComment(context.Background(), c.owner, c.repo, *comment.ID)
+		if err != nil {
+			return fmt.Errorf("failed to delete PR review comment: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func (c *Client) deleteBotIssueComments() error {
+	issueComments, _, err := c.client.Issues.ListComments(context.Background(), c.owner, c.repo, c.prNumber, &github.IssueListCommentsOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to list PR issue comments: %w", err)
+	}
+
+	for _, comment := range issueComments {
+		if comment.ID == nil || comment.User == nil {
+			continue
+		}
+
+		if !strings.Contains(comment.User.GetLogin(), "bot") {
+			continue
+		}
+
+		_, err = c.client.Issues.DeleteComment(context.Background(), c.owner, c.repo, *comment.ID)
+		if err != nil {
+			return fmt.Errorf("failed to delete PR issue comment: %w", err)
 		}
 	}
 

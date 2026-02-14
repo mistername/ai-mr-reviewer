@@ -13,6 +13,7 @@ func (mrProviderMock) GetExistingComments() (map[string][]string, error) {
 	return map[string][]string{}, nil
 }
 func (mrProviderMock) AddMergeRequestDiscussion(string, int, string) error { return nil }
+func (mrProviderMock) DeleteBotCommentsExceptResolved() error              { return nil }
 
 type ollamaMock struct{}
 
@@ -40,6 +41,7 @@ func (configMock) GetOpenAIModel() string             { return "" }
 func (configMock) GetAnthropicAuthToken() string      { return "" }
 func (configMock) GetAnthropicBaseURL() string        { return "" }
 func (configMock) GetAnthropicModel() string          { return "" }
+func (configMock) GetDeleteBotComments() bool         { return false }
 
 func TestPortContractsCompile(t *testing.T) {
 	var _ MRProviderPort = mrProviderMock{}

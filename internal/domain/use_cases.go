@@ -4,6 +4,7 @@ type MRProviderPort interface {
 	GetMergeRequestChanges() ([]Diff, error)
 	GetExistingComments() (map[string][]string, error)
 	AddMergeRequestDiscussion(file string, line int, note string) error
+	DeleteBotCommentsExceptResolved() error
 }
 
 type AIProviderPort interface {
@@ -31,4 +32,5 @@ type ConfigPort interface {
 	GetAnthropicAuthToken() string
 	GetAnthropicBaseURL() string
 	GetAnthropicModel() string
+	GetDeleteBotComments() bool
 }

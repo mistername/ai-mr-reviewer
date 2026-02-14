@@ -109,4 +109,28 @@ func (c *Client) AddMergeRequestDiscussion(file string, line int, note string) e
 	return nil
 }
 
+func (c *Client) DeleteBotCommentsExceptResolved() error {
+	notes, _, err := c.git.Notes.ListMergeRequestNotes(
+		c.projectID,
+		int64(c.iid),
+		&gitlab.ListMergeRequestNotesOptions{},
+	)
+	if err != nil {
+		return fmt.Errorf("failed to list notes: %w", err)
+	}
+
+	for _, note := range notes {
+		if note.System || note.Resolved {
+			continue
+		}
+
+		_, err := c.git.Notes.DeleteMergeRequestNote(c.projectID, int64(c.iid), note.ID)
+		if err != nil {
+			return fmt.Errorf("failed to delete note: %w", err)
+		}
+	}
+
+	return nil
+}
+
 var _ domain.MRProviderPort = (*Client)(nil)
