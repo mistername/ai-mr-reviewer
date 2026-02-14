@@ -2,6 +2,7 @@ package application
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -56,6 +57,8 @@ func NewReviewer(config domain.ConfigPort, mrProvider domain.MRProviderPort, aiP
 }
 
 func (r *Reviewer) Run() error {
+	var err error
+
 	existing, err := r.mrProvider.GetExistingComments()
 	if err != nil {
 		r.logger.Warn("cannot read existing comments", zap.Error(err))
@@ -70,11 +73,12 @@ func (r *Reviewer) Run() error {
 
 	for _, d := range r.filterNewDiffs(diffs, existing) {
 		if err := r.reviewDiff(d); err != nil {
+			err = errors.Join(err, fmt.Errorf("review failed %s: %w", d.NewPath, err))
 			r.logger.Warn("review failed", zap.String("path", d.NewPath), zap.Error(err))
 		}
 	}
 
-	return nil
+	return err
 }
 
 func (r *Reviewer) filterNewDiffs(diffs []domain.Diff, existing map[string][]string) []domain.Diff {
