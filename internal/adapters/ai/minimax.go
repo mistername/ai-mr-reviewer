@@ -17,8 +17,8 @@ func NewMiniMaxClient(apiKey, baseURL, model string) *MiniMaxClient {
 	return &MiniMaxClient{apiKey: apiKey, baseURL: baseURL, model: model, http: &http.Client{}}
 }
 
-func (c *MiniMaxClient) ReviewCode(filePath, diff, language string) (string, error) {
-	prompt := domain.BuildReviewPrompt(filePath, diff, language)
+func (c *MiniMaxClient) ReviewCode(diff string) (string, error) {
+	prompt := domain.BuildReviewPrompt(diff)
 
 	reqBody := chatCompletionRequest{
 		Model: c.model,

@@ -41,8 +41,8 @@ func NewOllamaClient(baseURL, model string) *OllamaClient {
 	return &OllamaClient{baseURL: baseURL, model: model, http: &http.Client{}}
 }
 
-func (c *OllamaClient) ReviewCode(filePath, diff, language string) (string, error) {
-	prompt := domain.BuildReviewPrompt(filePath, diff, language)
+func (c *OllamaClient) ReviewCode(diff string) (string, error) {
+	prompt := domain.BuildReviewPrompt(diff)
 	reqBody := ollamaRequest{
 		Model: c.model,
 		Messages: []message{{

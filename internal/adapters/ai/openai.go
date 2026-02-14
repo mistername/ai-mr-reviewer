@@ -17,8 +17,8 @@ func NewOpenAIClient(apiKey, baseURL, model string) *OpenAIClient {
 	return &OpenAIClient{apiKey: apiKey, baseURL: baseURL, model: model, http: &http.Client{}}
 }
 
-func (c *OpenAIClient) ReviewCode(filePath, diff, language string) (string, error) {
-	prompt := domain.BuildReviewPrompt(filePath, diff, language)
+func (c *OpenAIClient) ReviewCode(diff string) (string, error) {
+	prompt := domain.BuildReviewPrompt(diff)
 
 	reqBody := chatCompletionRequest{
 		Model: c.model,

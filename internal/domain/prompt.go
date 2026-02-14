@@ -24,11 +24,9 @@ Return ONLY valid JSON:
 { "issues": [ { "file": "<path>", "line": <int>, "severity": "error|warning|info", "message": "<short grounded explanation>" } ] }
 If none: {"issues": []}
 
-File: %s
-Language: %s
-Diff:
+Full diff:
 %s`
 
-func BuildReviewPrompt(filePath, diff, language string) string {
-	return fmt.Sprintf(promptFormat, filePath, language, diff)
+func BuildReviewPrompt(diff string) string {
+	return fmt.Sprintf(promptFormat, diff)
 }

@@ -72,7 +72,7 @@ type ollamaMock struct {
 	err      error
 }
 
-func (m *ollamaMock) ReviewCode(string, string, string) (string, error) { return m.response, m.err }
+func (m *ollamaMock) ReviewCode(string) (string, error) { return m.response, m.err }
 
 func TestParseReviewResponse(t *testing.T) {
 	issues, err := parseReviewResponse("some text {\"issues\":[{\"file\":\"a.go\",\"line\":3,\"severity\":\"warning\",\"message\":\"x\"}]} tail")

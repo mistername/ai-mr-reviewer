@@ -128,7 +128,7 @@ func hasExistingComments(path string, existing map[string][]string, prefix strin
 func (r *Reviewer) reviewDiffs(diffs []domain.Diff) error {
 	combinedDiff := buildCombinedDiff(diffs)
 
-	reviewText, err := r.aiProvider.ReviewCode("merge_request.diff", combinedDiff, "Multiple")
+	reviewText, err := r.aiProvider.ReviewCode(combinedDiff)
 	if err != nil {
 		return fmt.Errorf("review code: %w", err)
 	}

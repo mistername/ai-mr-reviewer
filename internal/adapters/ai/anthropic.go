@@ -37,8 +37,8 @@ func NewAnthropicClient(apiKey, baseURL, model string) *AnthropicClient {
 	return &AnthropicClient{apiKey: apiKey, baseURL: baseURL, model: model, http: &http.Client{}}
 }
 
-func (c *AnthropicClient) ReviewCode(filePath, diff, language string) (string, error) {
-	prompt := domain.BuildReviewPrompt(filePath, diff, language)
+func (c *AnthropicClient) ReviewCode(diff string) (string, error) {
+	prompt := domain.BuildReviewPrompt(diff)
 	reqBody := anthropicRequest{
 		Model: c.model,
 		Messages: []message{{
