@@ -31,4 +31,5 @@ jobs:
           OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_MODEL: ${{ secrets.OPENAI_MODEL }}
+          DELETE_BOT_COMMENTS: true
         run: go install -bin-name=ai-mr-reviewer . && ai-mr-reviewer
