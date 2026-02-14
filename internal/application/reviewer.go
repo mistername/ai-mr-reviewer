@@ -123,7 +123,7 @@ func (r *Reviewer) reviewDiff(d domain.Diff) error {
 
 	issues, err := parseReviewResponse(reviewText)
 	if err != nil {
-		return fmt.Errorf("parse AI review response: %w", err)
+		return fmt.Errorf("parse review response %s: %w", d.NewPath, err)
 	}
 
 	prefix := r.config.GetCommentPrefix()
@@ -142,7 +142,7 @@ func parseReviewResponse(response string) ([]domain.ReviewIssue, error) {
 
 	jsonStr := extractJSON(trimmed)
 	if jsonStr == "" {
-		return nil, fmt.Errorf("no JSON found in response")
+		return nil, nil
 	}
 
 	var parsed reviewResponse
