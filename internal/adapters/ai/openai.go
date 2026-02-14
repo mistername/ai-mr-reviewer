@@ -38,7 +38,7 @@ func NewOpenAIClient(apiKey, baseURL, model string) *OpenAIClient {
 }
 
 func (c *OpenAIClient) ReviewCode(filePath, diff, language string) (string, error) {
-	prompt := buildReviewPrompt(filePath, diff, language)
+	prompt := domain.BuildReviewPrompt(filePath, diff, language)
 	reqBody := openaiRequest{
 		Model: c.model,
 		Messages: []message{{

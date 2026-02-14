@@ -41,7 +41,7 @@ func NewMiniMaxClient(apiKey, baseURL, model string) *MiniMaxClient {
 }
 
 func (c *MiniMaxClient) ReviewCode(filePath, diff, language string) (string, error) {
-	prompt := buildReviewPrompt(filePath, diff, language)
+	prompt := domain.BuildReviewPrompt(filePath, diff, language)
 	reqBody := minimaxRequest{
 		Model: c.model,
 		Messages: []message{{
