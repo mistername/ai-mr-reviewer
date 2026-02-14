@@ -33,6 +33,9 @@ func (c *configMock) GetAnthropicBaseURL() string        { return "https://api.a
 func (c *configMock) GetAnthropicModel() string          { return "claude-sonnet-4-20250514" }
 func (c *configMock) GetDeleteBotComments() bool         { return false }
 func (c *configMock) GetCommentPrefix() string           { return "ai-mr-reviewer" }
+func (c *configMock) GetMiniMaxAPIKey() string           { return "" }
+func (c *configMock) GetMiniMaxBaseURL() string          { return "https://api.minimax.chat/v1" }
+func (c *configMock) GetMiniMaxModel() string            { return "MiniMax-M2.5" }
 
 var _ domain.ConfigPort = (*configMock)(nil)
 

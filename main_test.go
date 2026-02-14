@@ -114,6 +114,9 @@ func (c *configMockForTest) GetAnthropicBaseURL() string        { return "https:
 func (c *configMockForTest) GetAnthropicModel() string          { return "claude-sonnet-4-20250514" }
 func (c *configMockForTest) GetDeleteBotComments() bool         { return false }
 func (c *configMockForTest) GetCommentPrefix() string           { return "ai-mr-reviewer" }
+func (c *configMockForTest) GetMiniMaxAPIKey() string           { return "" }
+func (c *configMockForTest) GetMiniMaxBaseURL() string          { return "https://api.minimax.chat/v1" }
+func (c *configMockForTest) GetMiniMaxModel() string            { return "MiniMax-M2.5" }
 
 var _ domain.ConfigPort = (*configMockForTest)(nil)
 
