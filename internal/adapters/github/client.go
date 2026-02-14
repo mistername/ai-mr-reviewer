@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/google/go-github/v68/github"
+	"github.com/google/go-github/v82/github"
 
 	"github.com/adlandh/ai-mr-reviewer/internal/domain"
 )
