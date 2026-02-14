@@ -91,7 +91,16 @@ func (c *Client) AddMergeRequestDiscussion(file string, line int, note string) e
 
 	_, _, err := c.client.PullRequests.CreateComment(context.Background(), c.owner, c.repo, c.prNumber, prComment)
 	if err != nil {
-		return fmt.Errorf("failed to add PR comment: %w", err)
+		fileComment := &github.PullRequestComment{
+			Body:     &note,
+			Path:     &file,
+			CommitID: &c.commitSHA,
+		}
+
+		_, _, err = c.client.PullRequests.CreateComment(context.Background(), c.owner, c.repo, c.prNumber, fileComment)
+		if err != nil {
+			return fmt.Errorf("failed to add PR comment: %w", err)
+		}
 	}
 
 	return nil
