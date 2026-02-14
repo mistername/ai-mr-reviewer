@@ -21,6 +21,11 @@ type ollamaRequest struct {
 	Model    string    `json:"model"`
 	Messages []message `json:"messages"`
 	Stream   bool      `json:"stream"`
+	Options  options   `json:"options"`
+}
+
+type options struct {
+	Temperature float64 `json:"temperature"`
 }
 
 type message struct {
@@ -45,6 +50,9 @@ func (c *OllamaClient) ReviewCode(filePath, diff, language string) (string, erro
 			Content: prompt,
 		}},
 		Stream: false,
+		Options: options{
+			Temperature: 0,
+		},
 	}
 
 	body, err := json.Marshal(reqBody)
