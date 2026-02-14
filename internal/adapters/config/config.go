@@ -24,11 +24,12 @@ type Config struct {
 	OllamaModel             string `env:"OLLAMA_MODEL" envDefault:"llama3.2"`
 	OpenAIAPIKey            string `env:"OPENAI_API_KEY"`
 	OpenAIBaseURL           string `env:"OPENAI_BASE_URL" envDefault:"https://api.openai.com/v1"`
-	OpenAIModel             string `env:"OPENAI_MODEL" envDefault:"gpt-4o"`
+	OpenAIModel             string `env:"OPENAI_MODEL" envDefault:"GPT-5.2-Codex"`
 	AnthropicAuthToken      string `env:"ANTHROPIC_AUTH_TOKEN"`
 	AnthropicBaseURL        string `env:"ANTHROPIC_BASE_URL" envDefault:"https://api.anthropic.com/v1/"`
 	AnthropicModel          string `env:"ANTHROPIC_MODEL" envDefault:"claude-sonnet-4-20250514"`
-	DeleteBotComments       bool   `env:"DELETE_BOT_COMMENTS"`
+	DeleteBotComments       bool   `env:"DELETE_BOT_COMMENTS" envDefault:"true"`
+	CommentPrefix           string `env:"COMMENT_PREFIX,notEmpty" envDefault:"ai-mr-reviewer"`
 }
 
 func New() (*Config, error) {
@@ -122,6 +123,10 @@ func (c *Config) GetAnthropicModel() string {
 
 func (c *Config) GetDeleteBotComments() bool {
 	return c.DeleteBotComments
+}
+
+func (c *Config) GetCommentPrefix() string {
+	return c.CommentPrefix
 }
 
 var _ domain.ConfigPort = (*Config)(nil)

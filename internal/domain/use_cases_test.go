@@ -42,6 +42,7 @@ func (configMock) GetAnthropicAuthToken() string      { return "" }
 func (configMock) GetAnthropicBaseURL() string        { return "" }
 func (configMock) GetAnthropicModel() string          { return "" }
 func (configMock) GetDeleteBotComments() bool         { return false }
+func (configMock) GetCommentPrefix() string           { return "ai-mr-reviewer" }
 
 func TestPortContractsCompile(t *testing.T) {
 	var _ MRProviderPort = mrProviderMock{}

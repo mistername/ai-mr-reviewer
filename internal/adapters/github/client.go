@@ -13,14 +13,15 @@ import (
 )
 
 type Client struct {
-	client    *github.Client
-	owner     string
-	repo      string
-	commitSHA string
-	prNumber  int
+	client        *github.Client
+	commentPrefix string
+	owner         string
+	repo          string
+	commitSHA     string
+	prNumber      int
 }
 
-func NewClient(token, owner, repo, prNumber, commitSHA string) (*Client, error) {
+func NewClient(token, owner, repo, prNumber, commitSHA, commentPrefix string) (*Client, error) {
 	httpClient := &http.Client{}
 	client := github.NewClient(httpClient)
 	client = client.WithAuthToken(token)
@@ -31,11 +32,12 @@ func NewClient(token, owner, repo, prNumber, commitSHA string) (*Client, error) 
 	}
 
 	return &Client{
-		client:    client,
-		owner:     owner,
-		repo:      repo,
-		prNumber:  prNum,
-		commitSHA: commitSHA,
+		client:        client,
+		owner:         owner,
+		repo:          repo,
+		prNumber:      prNum,
+		commitSHA:     commitSHA,
+		commentPrefix: commentPrefix,
 	}, nil
 }
 
@@ -106,8 +108,6 @@ func (c *Client) AddMergeRequestDiscussion(file string, line int, note string) e
 	return nil
 }
 
-const commentPrefix = "ai-mr-reviewer:"
-
 func (c *Client) DeleteBotCommentsExceptResolved() error {
 	err := c.deleteBotReviewComments()
 	if err != nil {
@@ -128,7 +128,7 @@ func (c *Client) deleteBotReviewComments() error {
 			continue
 		}
 
-		if !strings.HasPrefix(*comment.Body, commentPrefix) {
+		if !strings.HasPrefix(*comment.Body, c.commentPrefix+":") {
 			continue
 		}
 
@@ -152,7 +152,7 @@ func (c *Client) deleteBotIssueComments() error {
 			continue
 		}
 
-		if !strings.HasPrefix(*comment.Body, commentPrefix) {
+		if !strings.HasPrefix(*comment.Body, c.commentPrefix+":") {
 			continue
 		}
 

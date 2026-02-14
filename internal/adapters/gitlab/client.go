@@ -9,8 +9,6 @@ import (
 	"github.com/adlandh/ai-mr-reviewer/internal/domain"
 )
 
-const commentPrefix = "ai-mr-reviewer:"
-
 type Client struct {
 	config    domain.ConfigPort
 	git       *gitlab.Client
@@ -89,7 +87,7 @@ func (c *Client) AddMergeRequestDiscussion(file string, line int, note string) e
 
 	line64 := int64(line)
 
-	noteWithPrefix := commentPrefix + " " + note
+	noteWithPrefix := c.config.GetCommentPrefix() + ": " + note
 
 	_, _, err := c.git.Discussions.CreateMergeRequestDiscussion(
 		c.projectID,
@@ -129,7 +127,7 @@ func (c *Client) DeleteBotCommentsExceptResolved() error {
 			continue
 		}
 
-		if !strings.HasPrefix(note.Body, commentPrefix) {
+		if !strings.HasPrefix(note.Body, c.config.GetCommentPrefix()+":") {
 			continue
 		}
 

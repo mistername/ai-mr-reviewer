@@ -33,4 +33,5 @@ type ConfigPort interface {
 	GetAnthropicBaseURL() string
 	GetAnthropicModel() string
 	GetDeleteBotComments() bool
+	GetCommentPrefix() string
 }

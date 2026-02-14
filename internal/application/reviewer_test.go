@@ -32,6 +32,7 @@ func (c *configMock) GetAnthropicAuthToken() string      { return "" }
 func (c *configMock) GetAnthropicBaseURL() string        { return "https://api.anthropic.com/v1/" }
 func (c *configMock) GetAnthropicModel() string          { return "claude-sonnet-4-20250514" }
 func (c *configMock) GetDeleteBotComments() bool         { return false }
+func (c *configMock) GetCommentPrefix() string           { return "ai-mr-reviewer" }
 
 var _ domain.ConfigPort = (*configMock)(nil)
 
