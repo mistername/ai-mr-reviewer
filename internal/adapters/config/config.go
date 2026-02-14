@@ -8,8 +8,8 @@ import (
 )
 
 type Config struct {
-	VCSProvider             string `env:"VCS_PROVIDER,notEmpty" envDefault:"gitlab"`
-	GitLabURL               string `env:"CI_SERVER_URL" envDefault:"https://gitlab.com"`
+	GitHubPRNumber          string `env:"GITHUB_PR_NUMBER"`
+	AIProvider              string `env:"AI_PROVIDER,notEmpty" envDefault:"ollama"`
 	GitLabToken             string `env:"GITLAB_TOKEN"`
 	ProjectID               string `env:"CI_PROJECT_ID"`
 	MergeRequestIID         string `env:"CI_MERGE_REQUEST_IID"`
@@ -17,10 +17,10 @@ type Config struct {
 	MergeRequestDiffBaseSHA string `env:"CI_MERGE_REQUEST_DIFF_BASE_SHA"`
 	GitHubToken             string `env:"GITHUB_TOKEN"`
 	GitHubOwner             string `env:"GITHUB_OWNER"`
-	GitHubRepo              string `env:"GITHUB_REPO"`
-	GitHubPRNumber          string `env:"GITHUB_PR_NUMBER"`
-	AIProvider              string `env:"AI_PROVIDER,notEmpty" envDefault:"ollama"`
 	OllamaURL               string `env:"OLLAMA_URL" envDefault:"http://localhost:11434"`
+	GitLabURL               string `env:"CI_SERVER_URL" envDefault:"https://gitlab.com"`
+	VCSProvider             string `env:"VCS_PROVIDER,notEmpty" envDefault:"gitlab"`
+	GitHubRepo              string `env:"GITHUB_REPO"`
 	OllamaModel             string `env:"OLLAMA_MODEL" envDefault:"llama3.2"`
 	OpenAIAPIKey            string `env:"OPENAI_API_KEY"`
 	OpenAIBaseURL           string `env:"OPENAI_BASE_URL" envDefault:"https://api.openai.com/v1"`
@@ -28,8 +28,8 @@ type Config struct {
 	AnthropicAuthToken      string `env:"ANTHROPIC_AUTH_TOKEN"`
 	AnthropicBaseURL        string `env:"ANTHROPIC_BASE_URL" envDefault:"https://api.anthropic.com/v1/"`
 	AnthropicModel          string `env:"ANTHROPIC_MODEL" envDefault:"claude-sonnet-4-20250514"`
-	DeleteBotComments       bool   `env:"DELETE_BOT_COMMENTS" envDefault:"true"`
 	CommentPrefix           string `env:"COMMENT_PREFIX,notEmpty" envDefault:"ai-mr-reviewer"`
+	DeleteBotComments       bool   `env:"DELETE_BOT_COMMENTS" envDefault:"true"`
 }
 
 func New() (*Config, error) {
