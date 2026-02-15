@@ -1,6 +1,9 @@
 pre-push:
   parallel: true
   commands:
+    generate:
+      tags: generate code
+      run: go generate ./...
     lint:
       tags: run linter
       run: golangci-lint run

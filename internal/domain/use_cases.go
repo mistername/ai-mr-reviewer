@@ -2,6 +2,8 @@ package domain
 
 import "time"
 
+//go:generate go tool mockery
+
 type MRProviderPort interface {
 	GetMergeRequestChanges() ([]Diff, error)
 	GetExistingComments() (map[string][]string, error)

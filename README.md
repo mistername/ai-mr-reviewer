@@ -233,7 +233,7 @@ OpenAI example (`env` additions):
 ```yaml
           AI_PROVIDER: openai
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          OPENAI_MODEL: GPT-5.2-Codex
+          OPENAI_MODEL: gpt-5-codex
 ```
 
 Ollama example (`env` additions):
