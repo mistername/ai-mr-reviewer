@@ -25,6 +25,7 @@ type ConfigPort interface {
 	GetGitHubPRNumber() string
 	GetAIProvider() string
 	GetOllamaURL() string
+	GetOllamaAPIKey() string
 	GetOllamaModel() string
 	GetOpenAIAPIKey() string
 	GetOpenAIBaseURL() string

@@ -73,6 +73,7 @@ This tool automatically reviews code changes in Merge Requests using AI. It anal
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `OLLAMA_URL` | Ollama server URL | `http://localhost:11434` |
+| `OLLAMA_API_KEY` | Ollama API key for protected/cloud endpoints | - |
 | `OLLAMA_MODEL` | Ollama model name | `llama3.2` |
 
 ### OpenAI Configuration
@@ -239,15 +240,18 @@ Ollama example (`env` additions):
 ```yaml
           AI_PROVIDER: ollama
           OLLAMA_URL: http://localhost:11434
+          OLLAMA_API_KEY: ${{ secrets.OLLAMA_API_KEY }} # optional for cloud/protected endpoint
           OLLAMA_MODEL: llama3.2
 ```
-(`steps` additions):
+(`steps` additions for local runner model start):
 ```yaml
         - name: Run model
           uses: ai-action/ollama-action@v2
           with:
             model: llama3.2
 ```
+For Ollama cloud/remote endpoints, set `OLLAMA_URL` + `OLLAMA_API_KEY` and skip the `Run model` step.
+
 Anthropic example (`env` additions):
 
 ```yaml

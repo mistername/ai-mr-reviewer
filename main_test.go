@@ -105,6 +105,7 @@ func (c *configMockForTest) GetGitHubRepo() string              { return "" }
 func (c *configMockForTest) GetGitHubPRNumber() string          { return "" }
 func (c *configMockForTest) GetAIProvider() string              { return "ollama" }
 func (c *configMockForTest) GetOllamaURL() string               { return "http://localhost:11434" }
+func (c *configMockForTest) GetOllamaAPIKey() string            { return "" }
 func (c *configMockForTest) GetOllamaModel() string             { return "llama3.2" }
 func (c *configMockForTest) GetOpenAIAPIKey() string            { return "" }
 func (c *configMockForTest) GetOpenAIBaseURL() string           { return "https://api.openai.com/v1" }
