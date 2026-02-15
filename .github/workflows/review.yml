@@ -19,6 +19,11 @@ jobs:
           go-version: '1.25'
           cache: true
 
+      - name: Run model
+        uses: ai-action/ollama-action@v2
+        with:
+          model: llama3.2
+
       - name: Run Review
         env:
           VCS_PROVIDER: github
@@ -27,7 +32,8 @@ jobs:
           GITHUB_REPO: ${{ github.event.repository.name }}
           GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
           CI_COMMIT_SHA: ${{ github.sha }}
-          AI_PROVIDER: minimax
-          MINIMAX_API_KEY: ${{ secrets.MINIMAX_API_KEY }}
+          AI_PROVIDER: ollama
+          OLLAMA_URL: http://localhost:11434
+          OLLAMA_MODEL: llama3.2
           DELETE_BOT_COMMENTS: true
         run: go install . && ai-mr-reviewer
