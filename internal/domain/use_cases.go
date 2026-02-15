@@ -1,5 +1,7 @@
 package domain
 
+import "time"
+
 type MRProviderPort interface {
 	GetMergeRequestChanges() ([]Diff, error)
 	GetExistingComments() (map[string][]string, error)
@@ -36,6 +38,7 @@ type ConfigPort interface {
 	GetMiniMaxAPIKey() string
 	GetMiniMaxBaseURL() string
 	GetMiniMaxModel() string
+	GetRunTimeout() time.Duration
 	GetDeleteBotComments() bool
 	GetCommentPrefix() string
 }

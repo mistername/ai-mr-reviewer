@@ -27,9 +27,8 @@ jobs:
           GITHUB_REPO: ${{ github.event.repository.name }}
           GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
           CI_COMMIT_SHA: ${{ github.sha }}
-          AI_PROVIDER: ollama
-          OLLAMA_URL: https://ollama.com
-          OLLAMA_MODEL: qwen3-coder-next:cloud
-          OLLAMA_API_KEY: ${{ secrets.OLLAMA_API_KEY }}
+          AI_PROVIDER: minimax
+          MINIMAX_API_KEY: ${{ secrets.MINIMAX_API_KEY }}
           DELETE_BOT_COMMENTS: true
+          RUN_TIMEOUT: 1m
         run: go install . && ai-mr-reviewer

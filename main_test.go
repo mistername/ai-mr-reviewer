@@ -2,6 +2,7 @@ package main
 
 import (
 	"testing"
+	"time"
 
 	"github.com/adlandh/ai-mr-reviewer/internal/domain"
 	"go.uber.org/fx"
@@ -118,6 +119,7 @@ func (c *configMockForTest) GetCommentPrefix() string           { return "ai-mr-
 func (c *configMockForTest) GetMiniMaxAPIKey() string           { return "" }
 func (c *configMockForTest) GetMiniMaxBaseURL() string          { return "https://api.minimax.chat/v1" }
 func (c *configMockForTest) GetMiniMaxModel() string            { return "MiniMax-M2.5" }
+func (c *configMockForTest) GetRunTimeout() time.Duration       { return 10 * time.Minute }
 
 var _ domain.ConfigPort = (*configMockForTest)(nil)
 

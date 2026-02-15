@@ -67,6 +67,7 @@ This tool automatically reviews code changes in Merge Requests using AI. It anal
 |----------|-------------|---------|
 | `COMMENT_PREFIX` | Prefix used for every bot comment (`<prefix>:`) | `ai-mr-reviewer` |
 | `DELETE_BOT_COMMENTS` | Delete previous unresolved bot comments before new run | `true` |
+| `RUN_TIMEOUT` | Max duration of a single review run | `10m` |
 
 ### Ollama Configuration
 
