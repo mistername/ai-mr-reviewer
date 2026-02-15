@@ -14,6 +14,7 @@ import (
 type OllamaClient struct {
 	http    *http.Client
 	baseURL string
+	apiKey  string
 	model   string
 }
 
@@ -37,8 +38,8 @@ type ollamaResponse struct {
 	Message message `json:"message"`
 }
 
-func NewOllamaClient(baseURL, model string) *OllamaClient {
-	return &OllamaClient{baseURL: baseURL, model: model, http: &http.Client{}}
+func NewOllamaClient(baseURL, apiKey, model string) *OllamaClient {
+	return &OllamaClient{baseURL: baseURL, apiKey: apiKey, model: model, http: &http.Client{}}
 }
 
 func (c *OllamaClient) ReviewCode(diff string) (string, error) {
@@ -68,6 +69,10 @@ func (c *OllamaClient) ReviewCode(diff string) (string, error) {
 	}
 
 	httpReq.Header.Set("Content-Type", "application/json")
+
+	if c.apiKey != "" {
+		httpReq.Header.Set("Authorization", "Bearer "+c.apiKey)
+	}
 
 	resp, err := c.http.Do(httpReq)
 	if err != nil {

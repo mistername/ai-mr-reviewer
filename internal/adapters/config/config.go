@@ -18,6 +18,7 @@ type Config struct {
 	GitHubToken             string `env:"GITHUB_TOKEN"`
 	GitHubOwner             string `env:"GITHUB_OWNER"`
 	OllamaURL               string `env:"OLLAMA_URL" envDefault:"http://localhost:11434"`
+	OllamaAPIKey            string `env:"OLLAMA_API_KEY"`
 	GitLabURL               string `env:"CI_SERVER_URL" envDefault:"https://gitlab.com"`
 	VCSProvider             string `env:"VCS_PROVIDER,notEmpty" envDefault:"gitlab"`
 	GitHubRepo              string `env:"GITHUB_REPO"`
@@ -94,6 +95,10 @@ func (c *Config) GetAIProvider() string {
 
 func (c *Config) GetOllamaURL() string {
 	return c.OllamaURL
+}
+
+func (c *Config) GetOllamaAPIKey() string {
+	return c.OllamaAPIKey
 }
 
 func (c *Config) GetOllamaModel() string {

@@ -11,7 +11,7 @@ func NewAIProvider(config domain.ConfigPort) (domain.AIProviderPort, error) {
 
 	switch provider {
 	case "ollama":
-		return NewOllamaClient(config.GetOllamaURL(), config.GetOllamaModel()), nil
+		return NewOllamaClient(config.GetOllamaURL(), config.GetOllamaAPIKey(), config.GetOllamaModel()), nil
 
 	case "openai":
 		if config.GetOpenAIAPIKey() == "" {

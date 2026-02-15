@@ -1,16 +1,17 @@
-# MR Reviewer
+# AI MR Reviewer
 
-AI-powered code review bot for GitLab Merge Requests and GitHub Pull Requests supporting multiple AI providers (Ollama, OpenAI, Anthropic).
+AI-powered code review bot for GitLab Merge Requests and GitHub Pull Requests supporting multiple AI providers (Ollama, OpenAI, Anthropic, MiniMax).
 
 ## Overview
 
-This tool automatically reviews code changes in Merge Requests using AI. It analyzes each file diff and adds inline comments with issues found by the AI model.
+This tool automatically reviews code changes in Merge Requests using AI. It analyzes the full MR/PR diff in a single request and adds inline comments with issues found by the AI model.
 
 ## Features
 
 - Supports both GitLab Merge Requests and GitHub Pull Requests
-- AI-powered analysis (Ollama, OpenAI, Anthropic)
+- AI-powered analysis (Ollama, OpenAI, Anthropic, MiniMax)
 - Inline comments with line numbers
+- Configurable comment prefix and cleanup of previous bot comments
 - Hexagonal architecture
 - Uber FX dependency injection
 - Zap structured logging
@@ -23,6 +24,7 @@ This tool automatically reviews code changes in Merge Requests using AI. It anal
   - Ollama server with a model (e.g., llama3.2)
   - OpenAI API key
   - Anthropic API key
+  - MiniMax API key
 
 ## Configuration
 
@@ -57,13 +59,21 @@ This tool automatically reviews code changes in Merge Requests using AI. It anal
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `AI_PROVIDER` | AI provider: `ollama`, `openai`, or `anthropic` | `ollama` |
+| `AI_PROVIDER` | AI provider: `ollama`, `openai`, `anthropic`, or `minimax` | `ollama` |
+
+### Review Behavior
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `COMMENT_PREFIX` | Prefix used for every bot comment (`<prefix>:`) | `ai-mr-reviewer` |
+| `DELETE_BOT_COMMENTS` | Delete previous unresolved bot comments before new run | `true` |
 
 ### Ollama Configuration
 
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `OLLAMA_URL` | Ollama server URL | `http://localhost:11434` |
+| `OLLAMA_API_KEY` | Ollama API key for protected/cloud endpoints | - |
 | `OLLAMA_MODEL` | Ollama model name | `llama3.2` |
 
 ### OpenAI Configuration
@@ -72,7 +82,7 @@ This tool automatically reviews code changes in Merge Requests using AI. It anal
 |----------|-------------|---------|
 | `OPENAI_API_KEY` | OpenAI API key | - |
 | `OPENAI_BASE_URL` | OpenAI API base URL | `https://api.openai.com/v1` |
-| `OPENAI_MODEL` | OpenAI model name | `gpt-4o` |
+| `OPENAI_MODEL` | OpenAI model name | `GPT-5.2-Codex` |
 
 ### Anthropic Configuration
 
@@ -81,6 +91,14 @@ This tool automatically reviews code changes in Merge Requests using AI. It anal
 | `ANTHROPIC_AUTH_TOKEN` | Anthropic auth token | - |
 | `ANTHROPIC_BASE_URL` | Anthropic API base URL | `https://api.anthropic.com/v1/` |
 | `ANTHROPIC_MODEL` | Anthropic model name | `claude-sonnet-4-20250514` |
+
+### MiniMax Configuration
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `MINIMAX_API_KEY` | MiniMax API key | - |
+| `MINIMAX_BASE_URL` | MiniMax API base URL | `https://api.minimax.io/v1` |
+| `MINIMAX_MODEL` | MiniMax model name | `MiniMax-M2.5` |
 
 ## Usage
 
@@ -108,6 +126,21 @@ export GITHUB_PR_NUMBER="123"
 export CI_COMMIT_SHA="abc123"
 export AI_PROVIDER="openai"
 export OPENAI_API_KEY="your-openai-key"
+
+go run ./main.go
+```
+
+### Running locally (GitHub + MiniMax)
+
+```bash
+export VCS_PROVIDER="github"
+export GITHUB_TOKEN="your-github-token"
+export GITHUB_OWNER="your-username"
+export GITHUB_REPO="your-repo"
+export GITHUB_PR_NUMBER="123"
+export CI_COMMIT_SHA="abc123"
+export AI_PROVIDER="minimax"
+export MINIMAX_API_KEY="your-minimax-key"
 
 go run ./main.go
 ```
@@ -162,6 +195,8 @@ ai-code-review:
 
 ### Running in GitHub Actions
 
+Base workflow:
+
 ```yaml
 name: AI Code Review
 
@@ -171,10 +206,13 @@ on:
 jobs:
   review:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: '1.25'
       - name: Install and Run Review
@@ -185,9 +223,49 @@ jobs:
           GITHUB_REPO: ${{ github.event.repository.name }}
           GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
           CI_COMMIT_SHA: ${{ github.sha }}
+          DELETE_BOT_COMMENTS: true
+        run: go install github.com/adlandh/ai-mr-reviewer@latest && ai-mr-reviewer
+```
+
+OpenAI example (`env` additions):
+
+```yaml
           AI_PROVIDER: openai
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        run: go install github.com/adlandh/ai-mr-reviewer@latest && ai-mr-reviewer
+          OPENAI_MODEL: GPT-5.2-Codex
+```
+
+Ollama example (`env` additions):
+
+```yaml
+          AI_PROVIDER: ollama
+          OLLAMA_URL: http://localhost:11434
+          OLLAMA_API_KEY: ${{ secrets.OLLAMA_API_KEY }} # optional for cloud/protected endpoint
+          OLLAMA_MODEL: llama3.2
+```
+(`steps` additions for local runner model start):
+```yaml
+        - name: Run model
+          uses: ai-action/ollama-action@v2
+          with:
+            model: llama3.2
+```
+For Ollama cloud/remote endpoints, set `OLLAMA_URL` + `OLLAMA_API_KEY` and skip the `Run model` step.
+
+Anthropic example (`env` additions):
+
+```yaml
+          AI_PROVIDER: anthropic
+          ANTHROPIC_AUTH_TOKEN: ${{ secrets.ANTHROPIC_AUTH_TOKEN }}
+          ANTHROPIC_MODEL: claude-sonnet-4-20250514
+```
+
+MiniMax example (`env` additions):
+
+```yaml
+          AI_PROVIDER: minimax
+          MINIMAX_API_KEY: ${{ secrets.MINIMAX_API_KEY }}
+          MINIMAX_MODEL: MiniMax-M2.5
 ```
 
 ## GitLab Token Setup
@@ -238,7 +316,7 @@ internal/
   adapters/
     gitlab/         # GitLab API client
     github/         # GitHub API client
-    ai/             # AI provider adapters (Ollama, OpenAI, Anthropic)
+    ai/             # AI provider adapters (Ollama, OpenAI, Anthropic, MiniMax)
     config/         # Configuration
 ```
 
