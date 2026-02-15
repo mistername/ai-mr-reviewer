@@ -22,7 +22,8 @@ jobs:
       - name: Run model
         uses: ai-action/ollama-action@v2
         with:
-          model: llama3.2
+          model: deepseek-coder-v2
+          cache: true
 
       - name: Run Review
         env:
@@ -34,6 +35,6 @@ jobs:
           CI_COMMIT_SHA: ${{ github.sha }}
           AI_PROVIDER: ollama
           OLLAMA_URL: http://localhost:11434
-          OLLAMA_MODEL: llama3.2
+          OLLAMA_MODEL: deepseek-coder-v2
           DELETE_BOT_COMMENTS: true
         run: go install . && ai-mr-reviewer
