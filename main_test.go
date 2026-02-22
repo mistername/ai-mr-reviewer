@@ -119,6 +119,8 @@ func (c *configMockForTest) GetCommentPrefix() string           { return "ai-mr-
 func (c *configMockForTest) GetMiniMaxAPIKey() string           { return "" }
 func (c *configMockForTest) GetMiniMaxBaseURL() string          { return "https://api.minimax.chat/v1" }
 func (c *configMockForTest) GetMiniMaxModel() string            { return "MiniMax-M2.5" }
+func (c *configMockForTest) GetCopilotBaseURL() string          { return "https://models.github.ai/inference" }
+func (c *configMockForTest) GetCopilotModel() string            { return "openai/gpt-4.1" }
 func (c *configMockForTest) GetRunTimeout() time.Duration       { return 10 * time.Minute }
 
 var _ domain.ConfigPort = (*configMockForTest)(nil)

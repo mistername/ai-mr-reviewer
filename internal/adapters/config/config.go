@@ -33,6 +33,8 @@ type Config struct {
 	MiniMaxAPIKey           string        `env:"MINIMAX_API_KEY"`
 	MiniMaxBaseURL          string        `env:"MINIMAX_BASE_URL" envDefault:"https://api.minimax.io/v1"`
 	MiniMaxModel            string        `env:"MINIMAX_MODEL" envDefault:"MiniMax-M2.5"`
+	CopilotBaseURL          string        `env:"COPILOT_BASE_URL" envDefault:"https://models.github.ai/inference"`
+	CopilotModel            string        `env:"COPILOT_MODEL" envDefault:"openai/gpt-4.1"`
 	CommentPrefix           string        `env:"COMMENT_PREFIX,notEmpty" envDefault:"ai-mr-reviewer"`
 	RunTimeout              time.Duration `env:"RUN_TIMEOUT" envDefault:"10m"`
 	DeleteBotComments       bool          `env:"DELETE_BOT_COMMENTS" envDefault:"true"`
@@ -141,6 +143,14 @@ func (c *Config) GetMiniMaxBaseURL() string {
 
 func (c *Config) GetMiniMaxModel() string {
 	return c.MiniMaxModel
+}
+
+func (c *Config) GetCopilotBaseURL() string {
+	return c.CopilotBaseURL
+}
+
+func (c *Config) GetCopilotModel() string {
+	return c.CopilotModel
 }
 
 func (c *Config) GetRunTimeout() time.Duration {

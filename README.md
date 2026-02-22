@@ -1,6 +1,6 @@
 # AI MR Reviewer
 
-AI-powered code review bot for GitLab Merge Requests and GitHub Pull Requests supporting multiple AI providers (Ollama, OpenAI, Anthropic, MiniMax).
+AI-powered code review bot for GitLab Merge Requests and GitHub Pull Requests supporting multiple AI providers (Ollama, OpenAI, Anthropic, MiniMax, Copilot).
 
 ## Overview
 
@@ -9,7 +9,7 @@ This tool automatically reviews code changes in Merge Requests using AI. It anal
 ## Features
 
 - Supports both GitLab Merge Requests and GitHub Pull Requests
-- AI-powered analysis (Ollama, OpenAI, Anthropic, MiniMax)
+- AI-powered analysis (Ollama, OpenAI, Anthropic, MiniMax, Copilot)
 - Inline comments with line numbers
 - Configurable comment prefix and cleanup of previous bot comments
 - Hexagonal architecture
@@ -25,6 +25,7 @@ This tool automatically reviews code changes in Merge Requests using AI. It anal
   - OpenAI API key
   - Anthropic API key
   - MiniMax API key
+  - GitHub token (for Copilot/GitHub Models)
 
 ## Configuration
 
@@ -59,7 +60,7 @@ This tool automatically reviews code changes in Merge Requests using AI. It anal
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `AI_PROVIDER` | AI provider: `ollama`, `openai`, `anthropic`, or `minimax` | `ollama` |
+| `AI_PROVIDER` | AI provider: `ollama`, `openai`, `anthropic`, `minimax`, or `copilot` | `ollama` |
 
 ### Review Behavior
 
@@ -100,6 +101,14 @@ This tool automatically reviews code changes in Merge Requests using AI. It anal
 | `MINIMAX_API_KEY` | MiniMax API key | - |
 | `MINIMAX_BASE_URL` | MiniMax API base URL | `https://api.minimax.io/v1` |
 | `MINIMAX_MODEL` | MiniMax model name | `MiniMax-M2.5` |
+
+### Copilot Configuration
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `GITHUB_TOKEN` | GitHub token used as bearer token for Copilot | - |
+| `COPILOT_BASE_URL` | Copilot-compatible base URL | `https://models.github.ai/inference` |
+| `COPILOT_MODEL` | Copilot-compatible model name | `openai/gpt-4.1` |
 
 ## Usage
 
@@ -142,6 +151,22 @@ export GITHUB_PR_NUMBER="123"
 export CI_COMMIT_SHA="abc123"
 export AI_PROVIDER="minimax"
 export MINIMAX_API_KEY="your-minimax-key"
+
+go run ./main.go
+```
+
+### Running locally (GitHub + Copilot)
+
+```bash
+export VCS_PROVIDER="github"
+export GITHUB_TOKEN="your-github-token"
+export GITHUB_OWNER="your-username"
+export GITHUB_REPO="your-repo"
+export GITHUB_PR_NUMBER="123"
+export CI_COMMIT_SHA="abc123"
+export AI_PROVIDER="copilot"
+export COPILOT_BASE_URL="https://models.github.ai/inference" # optional
+export COPILOT_MODEL="openai/gpt-4.1"                         # optional
 
 go run ./main.go
 ```
@@ -269,6 +294,15 @@ MiniMax example (`env` additions):
           MINIMAX_MODEL: MiniMax-M2.5
 ```
 
+Copilot example (`env` additions):
+
+```yaml
+          AI_PROVIDER: copilot
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COPILOT_BASE_URL: https://models.github.ai/inference
+          COPILOT_MODEL: openai/gpt-4.1
+```
+
 ## GitLab Token Setup
 
 1. Go to GitLab → Settings → Access Tokens
@@ -317,7 +351,7 @@ internal/
   adapters/
     gitlab/         # GitLab API client
     github/         # GitHub API client
-    ai/             # AI provider adapters (Ollama, OpenAI, Anthropic, MiniMax)
+    ai/             # AI provider adapters (Ollama, OpenAI, Anthropic, MiniMax, Copilot)
     config/         # Configuration
 ```
 

@@ -34,7 +34,14 @@ func NewAIProvider(config domain.ConfigPort) (domain.AIProviderPort, error) {
 
 		return NewMiniMaxClient(config.GetMiniMaxAPIKey(), config.GetMiniMaxBaseURL(), config.GetMiniMaxModel()), nil
 
+	case "copilot":
+		if config.GetGitHubToken() == "" {
+			return nil, fmt.Errorf("GITHUB_TOKEN is required for copilot provider")
+		}
+
+		return NewCopilotClient(config.GetGitHubToken(), config.GetCopilotBaseURL(), config.GetCopilotModel()), nil
+
 	default:
-		return nil, fmt.Errorf("unsupported AI provider: %s (supported: ollama, openai, anthropic, minimax)", provider)
+		return nil, fmt.Errorf("unsupported AI provider: %s (supported: ollama, openai, anthropic, minimax, copilot)", provider)
 	}
 }

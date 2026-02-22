@@ -40,6 +40,8 @@ type ConfigPort interface {
 	GetMiniMaxAPIKey() string
 	GetMiniMaxBaseURL() string
 	GetMiniMaxModel() string
+	GetCopilotBaseURL() string
+	GetCopilotModel() string
 	GetRunTimeout() time.Duration
 	GetDeleteBotComments() bool
 	GetCommentPrefix() string
