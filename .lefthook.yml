@@ -1,4 +1,4 @@
-pre-push:
+pre-commit:
   parallel: true
   commands:
     generate:
@@ -6,8 +6,11 @@ pre-push:
       run: go generate ./...
     lint:
       tags: run linter
-      run: golangci-lint run
+      run: golangci-lint run --fix
       glob: "*.go"
+pre-push:
+  parallel: true
+  commands:
     test:
       tags: run tests
       run: go test -v -race ./...

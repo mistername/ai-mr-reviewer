@@ -301,6 +301,94 @@ func (_c *ConfigPort_GetCommitSHA_Call) RunAndReturn(run func() string) *ConfigP
 	return _c
 }
 
+// GetCopilotBaseURL provides a mock function for the type ConfigPort
+func (_mock *ConfigPort) GetCopilotBaseURL() string {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetCopilotBaseURL")
+	}
+
+	var r0 string
+	if returnFunc, ok := ret.Get(0).(func() string); ok {
+		r0 = returnFunc()
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+	return r0
+}
+
+// ConfigPort_GetCopilotBaseURL_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetCopilotBaseURL'
+type ConfigPort_GetCopilotBaseURL_Call struct {
+	*mock.Call
+}
+
+// GetCopilotBaseURL is a helper method to define mock.On call
+func (_e *ConfigPort_Expecter) GetCopilotBaseURL() *ConfigPort_GetCopilotBaseURL_Call {
+	return &ConfigPort_GetCopilotBaseURL_Call{Call: _e.mock.On("GetCopilotBaseURL")}
+}
+
+func (_c *ConfigPort_GetCopilotBaseURL_Call) Run(run func()) *ConfigPort_GetCopilotBaseURL_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *ConfigPort_GetCopilotBaseURL_Call) Return(s string) *ConfigPort_GetCopilotBaseURL_Call {
+	_c.Call.Return(s)
+	return _c
+}
+
+func (_c *ConfigPort_GetCopilotBaseURL_Call) RunAndReturn(run func() string) *ConfigPort_GetCopilotBaseURL_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetCopilotModel provides a mock function for the type ConfigPort
+func (_mock *ConfigPort) GetCopilotModel() string {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetCopilotModel")
+	}
+
+	var r0 string
+	if returnFunc, ok := ret.Get(0).(func() string); ok {
+		r0 = returnFunc()
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+	return r0
+}
+
+// ConfigPort_GetCopilotModel_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetCopilotModel'
+type ConfigPort_GetCopilotModel_Call struct {
+	*mock.Call
+}
+
+// GetCopilotModel is a helper method to define mock.On call
+func (_e *ConfigPort_Expecter) GetCopilotModel() *ConfigPort_GetCopilotModel_Call {
+	return &ConfigPort_GetCopilotModel_Call{Call: _e.mock.On("GetCopilotModel")}
+}
+
+func (_c *ConfigPort_GetCopilotModel_Call) Run(run func()) *ConfigPort_GetCopilotModel_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *ConfigPort_GetCopilotModel_Call) Return(s string) *ConfigPort_GetCopilotModel_Call {
+	_c.Call.Return(s)
+	return _c
+}
+
+func (_c *ConfigPort_GetCopilotModel_Call) RunAndReturn(run func() string) *ConfigPort_GetCopilotModel_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetDeleteBotComments provides a mock function for the type ConfigPort
 func (_mock *ConfigPort) GetDeleteBotComments() bool {
 	ret := _mock.Called()

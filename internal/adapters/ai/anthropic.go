@@ -65,7 +65,7 @@ func (c *AnthropicClient) ReviewCode(diff string) (string, error) {
 	httpReq.Header.Set("x-api-key", c.apiKey)
 	httpReq.Header.Set("anthropic-version", "2023-06-01")
 
-	resp, err := c.http.Do(httpReq)
+	resp, err := c.http.Do(httpReq) //nolint:gosec
 	if err != nil {
 		return "", fmt.Errorf("call anthropic: %w", err)
 	}

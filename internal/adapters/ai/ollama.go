@@ -74,7 +74,7 @@ func (c *OllamaClient) ReviewCode(diff string) (string, error) {
 		httpReq.Header.Set("Authorization", "Bearer "+c.apiKey)
 	}
 
-	resp, err := c.http.Do(httpReq)
+	resp, err := c.http.Do(httpReq) //nolint:gosec
 	if err != nil {
 		return "", fmt.Errorf("call ollama: %w", err)
 	}

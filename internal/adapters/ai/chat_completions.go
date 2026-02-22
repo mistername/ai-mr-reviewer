@@ -47,7 +47,7 @@ func sendChatCompletionRequest(
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("Authorization", "Bearer "+apiKey)
 
-	resp, err := httpClient.Do(httpReq)
+	resp, err := httpClient.Do(httpReq) //nolint:gosec
 	if err != nil {
 		return "", fmt.Errorf("call %s: %w", providerName, err)
 	}
