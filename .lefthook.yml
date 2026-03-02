@@ -6,7 +6,7 @@ pre-commit:
       run: go generate ./...
     lint:
       tags: run linter
-      run: golangci-lint run --fix
+      run: golangci-lint run
       glob: "*.go"
 pre-push:
   parallel: true
