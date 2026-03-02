@@ -33,5 +33,5 @@ jobs:
           AI_PROVIDER: minimax
           MINIMAX_API_KEY: ${{ secrets.MINIMAX_API_KEY }}
           DELETE_BOT_COMMENTS: true
-          RUN_TIMEOUT: 5m
+          RUN_TIMEOUT: 10m
         run: go install . && ai-mr-reviewer
