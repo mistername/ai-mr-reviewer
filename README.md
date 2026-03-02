@@ -18,7 +18,7 @@ This tool automatically reviews code changes in Merge Requests using AI. It anal
 
 ## Requirements
 
-- Go 1.25+
+- Go 1.26+
 - GitLab API Token or GitHub Personal Access Token
 - One of:
   - Ollama server with a model (e.g., llama3.2)
@@ -194,7 +194,7 @@ stages:
 
 ai-code-review:
   stage: review
-  image: golang:1.25-alpine
+  image: golang:1.26-alpine
   services:
     - name: ollama/ollama:latest
       alias: ollama
@@ -240,7 +240,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.25'
+          go-version: '1.26'
       - name: Install and Run Review
         env:
           VCS_PROVIDER: github
