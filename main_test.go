@@ -121,7 +121,7 @@ func (configMockForTest) GetMiniMaxBaseURL() string          { return "https://a
 func (configMockForTest) GetMiniMaxModel() string            { return "MiniMax-M2.5" }
 func (configMockForTest) GetCopilotBaseURL() string          { return "https://models.github.ai/inference" }
 func (configMockForTest) GetCopilotModel() string            { return "openai/gpt-4.1" }
-func (c *configMockForTest) GetRunTimeout() time.Duration    { return 10 * time.Minute }
+func (configMockForTest) GetRunTimeout() time.Duration       { return 10 * time.Minute }
 
 var _ domain.ConfigPort = (*configMockForTest)(nil)
 
