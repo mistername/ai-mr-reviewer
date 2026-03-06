@@ -5,6 +5,8 @@
 package mocks
 
 import (
+	"context"
+
 	"github.com/adlandh/ai-mr-reviewer/internal/domain"
 	mock "github.com/stretchr/testify/mock"
 )
@@ -37,16 +39,16 @@ func (_m *MRProviderPort) EXPECT() *MRProviderPort_Expecter {
 }
 
 // AddMergeRequestDiscussion provides a mock function for the type MRProviderPort
-func (_mock *MRProviderPort) AddMergeRequestDiscussion(file string, line int, note string) error {
-	ret := _mock.Called(file, line, note)
+func (_mock *MRProviderPort) AddMergeRequestDiscussion(ctx context.Context, file string, line int, note string) error {
+	ret := _mock.Called(ctx, file, line, note)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AddMergeRequestDiscussion")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(string, int, string) error); ok {
-		r0 = returnFunc(file, line, note)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, int, string) error); ok {
+		r0 = returnFunc(ctx, file, line, note)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -59,31 +61,37 @@ type MRProviderPort_AddMergeRequestDiscussion_Call struct {
 }
 
 // AddMergeRequestDiscussion is a helper method to define mock.On call
+//   - ctx context.Context
 //   - file string
 //   - line int
 //   - note string
-func (_e *MRProviderPort_Expecter) AddMergeRequestDiscussion(file interface{}, line interface{}, note interface{}) *MRProviderPort_AddMergeRequestDiscussion_Call {
-	return &MRProviderPort_AddMergeRequestDiscussion_Call{Call: _e.mock.On("AddMergeRequestDiscussion", file, line, note)}
+func (_e *MRProviderPort_Expecter) AddMergeRequestDiscussion(ctx interface{}, file interface{}, line interface{}, note interface{}) *MRProviderPort_AddMergeRequestDiscussion_Call {
+	return &MRProviderPort_AddMergeRequestDiscussion_Call{Call: _e.mock.On("AddMergeRequestDiscussion", ctx, file, line, note)}
 }
 
-func (_c *MRProviderPort_AddMergeRequestDiscussion_Call) Run(run func(file string, line int, note string)) *MRProviderPort_AddMergeRequestDiscussion_Call {
+func (_c *MRProviderPort_AddMergeRequestDiscussion_Call) Run(run func(ctx context.Context, file string, line int, note string)) *MRProviderPort_AddMergeRequestDiscussion_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
 		}
-		var arg1 int
+		var arg1 string
 		if args[1] != nil {
-			arg1 = args[1].(int)
+			arg1 = args[1].(string)
 		}
-		var arg2 string
+		var arg2 int
 		if args[2] != nil {
-			arg2 = args[2].(string)
+			arg2 = args[2].(int)
+		}
+		var arg3 string
+		if args[3] != nil {
+			arg3 = args[3].(string)
 		}
 		run(
 			arg0,
 			arg1,
 			arg2,
+			arg3,
 		)
 	})
 	return _c
@@ -94,22 +102,22 @@ func (_c *MRProviderPort_AddMergeRequestDiscussion_Call) Return(err error) *MRPr
 	return _c
 }
 
-func (_c *MRProviderPort_AddMergeRequestDiscussion_Call) RunAndReturn(run func(file string, line int, note string) error) *MRProviderPort_AddMergeRequestDiscussion_Call {
+func (_c *MRProviderPort_AddMergeRequestDiscussion_Call) RunAndReturn(run func(ctx context.Context, file string, line int, note string) error) *MRProviderPort_AddMergeRequestDiscussion_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // DeleteBotCommentsExceptResolved provides a mock function for the type MRProviderPort
-func (_mock *MRProviderPort) DeleteBotCommentsExceptResolved() error {
-	ret := _mock.Called()
+func (_mock *MRProviderPort) DeleteBotCommentsExceptResolved(ctx context.Context) error {
+	ret := _mock.Called(ctx)
 
 	if len(ret) == 0 {
 		panic("no return value specified for DeleteBotCommentsExceptResolved")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func() error); ok {
-		r0 = returnFunc()
+	if returnFunc, ok := ret.Get(0).(func(context.Context) error); ok {
+		r0 = returnFunc(ctx)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -122,13 +130,20 @@ type MRProviderPort_DeleteBotCommentsExceptResolved_Call struct {
 }
 
 // DeleteBotCommentsExceptResolved is a helper method to define mock.On call
-func (_e *MRProviderPort_Expecter) DeleteBotCommentsExceptResolved() *MRProviderPort_DeleteBotCommentsExceptResolved_Call {
-	return &MRProviderPort_DeleteBotCommentsExceptResolved_Call{Call: _e.mock.On("DeleteBotCommentsExceptResolved")}
+//   - ctx context.Context
+func (_e *MRProviderPort_Expecter) DeleteBotCommentsExceptResolved(ctx interface{}) *MRProviderPort_DeleteBotCommentsExceptResolved_Call {
+	return &MRProviderPort_DeleteBotCommentsExceptResolved_Call{Call: _e.mock.On("DeleteBotCommentsExceptResolved", ctx)}
 }
 
-func (_c *MRProviderPort_DeleteBotCommentsExceptResolved_Call) Run(run func()) *MRProviderPort_DeleteBotCommentsExceptResolved_Call {
+func (_c *MRProviderPort_DeleteBotCommentsExceptResolved_Call) Run(run func(ctx context.Context)) *MRProviderPort_DeleteBotCommentsExceptResolved_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run()
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		run(
+			arg0,
+		)
 	})
 	return _c
 }
@@ -138,14 +153,14 @@ func (_c *MRProviderPort_DeleteBotCommentsExceptResolved_Call) Return(err error)
 	return _c
 }
 
-func (_c *MRProviderPort_DeleteBotCommentsExceptResolved_Call) RunAndReturn(run func() error) *MRProviderPort_DeleteBotCommentsExceptResolved_Call {
+func (_c *MRProviderPort_DeleteBotCommentsExceptResolved_Call) RunAndReturn(run func(ctx context.Context) error) *MRProviderPort_DeleteBotCommentsExceptResolved_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetExistingComments provides a mock function for the type MRProviderPort
-func (_mock *MRProviderPort) GetExistingComments() (map[string][]string, error) {
-	ret := _mock.Called()
+func (_mock *MRProviderPort) GetExistingComments(ctx context.Context) (map[string][]string, error) {
+	ret := _mock.Called(ctx)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetExistingComments")
@@ -153,18 +168,18 @@ func (_mock *MRProviderPort) GetExistingComments() (map[string][]string, error) 
 
 	var r0 map[string][]string
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func() (map[string][]string, error)); ok {
-		return returnFunc()
+	if returnFunc, ok := ret.Get(0).(func(context.Context) (map[string][]string, error)); ok {
+		return returnFunc(ctx)
 	}
-	if returnFunc, ok := ret.Get(0).(func() map[string][]string); ok {
-		r0 = returnFunc()
+	if returnFunc, ok := ret.Get(0).(func(context.Context) map[string][]string); ok {
+		r0 = returnFunc(ctx)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(map[string][]string)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func() error); ok {
-		r1 = returnFunc()
+	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = returnFunc(ctx)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -177,13 +192,20 @@ type MRProviderPort_GetExistingComments_Call struct {
 }
 
 // GetExistingComments is a helper method to define mock.On call
-func (_e *MRProviderPort_Expecter) GetExistingComments() *MRProviderPort_GetExistingComments_Call {
-	return &MRProviderPort_GetExistingComments_Call{Call: _e.mock.On("GetExistingComments")}
+//   - ctx context.Context
+func (_e *MRProviderPort_Expecter) GetExistingComments(ctx interface{}) *MRProviderPort_GetExistingComments_Call {
+	return &MRProviderPort_GetExistingComments_Call{Call: _e.mock.On("GetExistingComments", ctx)}
 }
 
-func (_c *MRProviderPort_GetExistingComments_Call) Run(run func()) *MRProviderPort_GetExistingComments_Call {
+func (_c *MRProviderPort_GetExistingComments_Call) Run(run func(ctx context.Context)) *MRProviderPort_GetExistingComments_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run()
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		run(
+			arg0,
+		)
 	})
 	return _c
 }
@@ -193,14 +215,14 @@ func (_c *MRProviderPort_GetExistingComments_Call) Return(stringToStrings map[st
 	return _c
 }
 
-func (_c *MRProviderPort_GetExistingComments_Call) RunAndReturn(run func() (map[string][]string, error)) *MRProviderPort_GetExistingComments_Call {
+func (_c *MRProviderPort_GetExistingComments_Call) RunAndReturn(run func(ctx context.Context) (map[string][]string, error)) *MRProviderPort_GetExistingComments_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetMergeRequestChanges provides a mock function for the type MRProviderPort
-func (_mock *MRProviderPort) GetMergeRequestChanges() ([]domain.Diff, error) {
-	ret := _mock.Called()
+func (_mock *MRProviderPort) GetMergeRequestChanges(ctx context.Context) ([]domain.Diff, error) {
+	ret := _mock.Called(ctx)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetMergeRequestChanges")
@@ -208,18 +230,18 @@ func (_mock *MRProviderPort) GetMergeRequestChanges() ([]domain.Diff, error) {
 
 	var r0 []domain.Diff
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func() ([]domain.Diff, error)); ok {
-		return returnFunc()
+	if returnFunc, ok := ret.Get(0).(func(context.Context) ([]domain.Diff, error)); ok {
+		return returnFunc(ctx)
 	}
-	if returnFunc, ok := ret.Get(0).(func() []domain.Diff); ok {
-		r0 = returnFunc()
+	if returnFunc, ok := ret.Get(0).(func(context.Context) []domain.Diff); ok {
+		r0 = returnFunc(ctx)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]domain.Diff)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func() error); ok {
-		r1 = returnFunc()
+	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = returnFunc(ctx)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -232,13 +254,20 @@ type MRProviderPort_GetMergeRequestChanges_Call struct {
 }
 
 // GetMergeRequestChanges is a helper method to define mock.On call
-func (_e *MRProviderPort_Expecter) GetMergeRequestChanges() *MRProviderPort_GetMergeRequestChanges_Call {
-	return &MRProviderPort_GetMergeRequestChanges_Call{Call: _e.mock.On("GetMergeRequestChanges")}
+//   - ctx context.Context
+func (_e *MRProviderPort_Expecter) GetMergeRequestChanges(ctx interface{}) *MRProviderPort_GetMergeRequestChanges_Call {
+	return &MRProviderPort_GetMergeRequestChanges_Call{Call: _e.mock.On("GetMergeRequestChanges", ctx)}
 }
 
-func (_c *MRProviderPort_GetMergeRequestChanges_Call) Run(run func()) *MRProviderPort_GetMergeRequestChanges_Call {
+func (_c *MRProviderPort_GetMergeRequestChanges_Call) Run(run func(ctx context.Context)) *MRProviderPort_GetMergeRequestChanges_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run()
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		run(
+			arg0,
+		)
 	})
 	return _c
 }
@@ -248,7 +277,7 @@ func (_c *MRProviderPort_GetMergeRequestChanges_Call) Return(diffs []domain.Diff
 	return _c
 }
 
-func (_c *MRProviderPort_GetMergeRequestChanges_Call) RunAndReturn(run func() ([]domain.Diff, error)) *MRProviderPort_GetMergeRequestChanges_Call {
+func (_c *MRProviderPort_GetMergeRequestChanges_Call) RunAndReturn(run func(ctx context.Context) ([]domain.Diff, error)) *MRProviderPort_GetMergeRequestChanges_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -5,6 +5,8 @@
 package mocks
 
 import (
+	"context"
+
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -36,8 +38,8 @@ func (_m *AIProviderPort) EXPECT() *AIProviderPort_Expecter {
 }
 
 // ReviewCode provides a mock function for the type AIProviderPort
-func (_mock *AIProviderPort) ReviewCode(diff string) (string, error) {
-	ret := _mock.Called(diff)
+func (_mock *AIProviderPort) ReviewCode(ctx context.Context, diff string) (string, error) {
+	ret := _mock.Called(ctx, diff)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ReviewCode")
@@ -45,16 +47,16 @@ func (_mock *AIProviderPort) ReviewCode(diff string) (string, error) {
 
 	var r0 string
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(string) (string, error)); ok {
-		return returnFunc(diff)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (string, error)); ok {
+		return returnFunc(ctx, diff)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string) string); ok {
-		r0 = returnFunc(diff)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) string); ok {
+		r0 = returnFunc(ctx, diff)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
-	if returnFunc, ok := ret.Get(1).(func(string) error); ok {
-		r1 = returnFunc(diff)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, diff)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -67,19 +69,25 @@ type AIProviderPort_ReviewCode_Call struct {
 }
 
 // ReviewCode is a helper method to define mock.On call
+//   - ctx context.Context
 //   - diff string
-func (_e *AIProviderPort_Expecter) ReviewCode(diff interface{}) *AIProviderPort_ReviewCode_Call {
-	return &AIProviderPort_ReviewCode_Call{Call: _e.mock.On("ReviewCode", diff)}
+func (_e *AIProviderPort_Expecter) ReviewCode(ctx interface{}, diff interface{}) *AIProviderPort_ReviewCode_Call {
+	return &AIProviderPort_ReviewCode_Call{Call: _e.mock.On("ReviewCode", ctx, diff)}
 }
 
-func (_c *AIProviderPort_ReviewCode_Call) Run(run func(diff string)) *AIProviderPort_ReviewCode_Call {
+func (_c *AIProviderPort_ReviewCode_Call) Run(run func(ctx context.Context, diff string)) *AIProviderPort_ReviewCode_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -90,7 +98,7 @@ func (_c *AIProviderPort_ReviewCode_Call) Return(s string, err error) *AIProvide
 	return _c
 }
 
-func (_c *AIProviderPort_ReviewCode_Call) RunAndReturn(run func(diff string) (string, error)) *AIProviderPort_ReviewCode_Call {
+func (_c *AIProviderPort_ReviewCode_Call) RunAndReturn(run func(ctx context.Context, diff string) (string, error)) *AIProviderPort_ReviewCode_Call {
 	_c.Call.Return(run)
 	return _c
 }

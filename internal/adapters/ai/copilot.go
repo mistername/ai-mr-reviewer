@@ -1,6 +1,7 @@
 package ai
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/adlandh/ai-mr-reviewer/internal/domain"
@@ -17,7 +18,7 @@ func NewCopilotClient(apiKey, baseURL, model string) *CopilotClient {
 	return &CopilotClient{apiKey: apiKey, baseURL: baseURL, model: model, http: &http.Client{}}
 }
 
-func (c *CopilotClient) ReviewCode(diff string) (string, error) {
+func (c *CopilotClient) ReviewCode(ctx context.Context, diff string) (string, error) {
 	prompt := domain.BuildReviewPrompt(diff)
 
 	reqBody := chatCompletionRequest{
@@ -30,7 +31,7 @@ func (c *CopilotClient) ReviewCode(diff string) (string, error) {
 		Temperature: 0,
 	}
 
-	return sendChatCompletionRequest(c.http, "copilot", c.baseURL, c.apiKey, reqBody, "chat", "completions")
+	return sendChatCompletionRequest(ctx, c.http, "copilot", c.baseURL, c.apiKey, reqBody, "chat", "completions")
 }
 
 var _ domain.AIProviderPort = (*CopilotClient)(nil)

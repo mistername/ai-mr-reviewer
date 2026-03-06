@@ -1,6 +1,8 @@
 package application
 
 import (
+	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -58,17 +60,17 @@ type addedDiscussion struct {
 	body string
 }
 
-func (m *mrProviderMock) GetMergeRequestChanges() ([]domain.Diff, error) {
+func (m *mrProviderMock) GetMergeRequestChanges(context.Context) ([]domain.Diff, error) {
 	return m.diffs, m.diffsErr
 }
-func (m *mrProviderMock) GetExistingComments() (map[string][]string, error) {
+func (m *mrProviderMock) GetExistingComments(context.Context) (map[string][]string, error) {
 	return m.comments, m.commentsErr
 }
-func (m *mrProviderMock) AddMergeRequestDiscussion(file string, line int, note string) error {
+func (m *mrProviderMock) AddMergeRequestDiscussion(_ context.Context, file string, line int, note string) error {
 	m.addedDiscussions = append(m.addedDiscussions, addedDiscussion{file: file, line: line, body: note})
 	return nil
 }
-func (m *mrProviderMock) DeleteBotCommentsExceptResolved() error { return nil }
+func (m *mrProviderMock) DeleteBotCommentsExceptResolved(context.Context) error { return nil }
 
 var _ domain.MRProviderPort = (*mrProviderMock)(nil)
 
@@ -77,7 +79,14 @@ type ollamaMock struct {
 	err      error
 }
 
-func (m *ollamaMock) ReviewCode(string) (string, error) { return m.response, m.err }
+func (m *ollamaMock) ReviewCode(context.Context, string) (string, error) { return m.response, m.err }
+
+type blockingAIMock struct{}
+
+func (blockingAIMock) ReviewCode(ctx context.Context, _ string) (string, error) {
+	<-ctx.Done()
+	return "", ctx.Err()
+}
 
 func TestParseReviewResponse(t *testing.T) {
 	issues, err := parseReviewResponse("some text {\"issues\":[{\"file\":\"a.go\",\"line\":3,\"severity\":\"warning\",\"message\":\"x\"}]} tail")
@@ -112,7 +121,7 @@ func TestRunReviewsOnlyNewDiffs(t *testing.T) {
 	o := &ollamaMock{response: `{"issues":[{"file":"new.go","line":10,"severity":"warning","message":"fix it"}]}`}
 	r := NewReviewer(c, g, o, zap.NewNop())
 
-	if err := r.Run(); err != nil {
+	if err := r.Run(context.Background()); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if len(g.addedDiscussions) != 1 {
@@ -133,10 +142,34 @@ func TestRunReviewsNewDiffsNoFilter(t *testing.T) {
 	o := &ollamaMock{response: `{"issues":[{"file":"new.go","line":10,"severity":"warning","message":"fix it"}]}`}
 	r := NewReviewer(c, g, o, zap.NewNop())
 
-	if err := r.Run(); err != nil {
+	if err := r.Run(context.Background()); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if len(g.addedDiscussions) != 1 {
 		t.Fatalf("expected 1 discussion, got %d", len(g.addedDiscussions))
+	}
+}
+
+func TestRunCancelsInFlightReview(t *testing.T) {
+	c := &configMock{iid: "5"}
+	g := &mrProviderMock{
+		diffs: []domain.Diff{
+			{NewPath: "new.go", Content: "diff2"},
+		},
+	}
+	r := NewReviewer(c, g, blockingAIMock{}, zap.NewNop())
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
+	defer cancel()
+
+	err := r.Run(ctx)
+	if err == nil {
+		t.Fatal("expected cancellation error")
+	}
+	if !strings.Contains(err.Error(), context.DeadlineExceeded.Error()) {
+		t.Fatalf("expected deadline exceeded error, got %v", err)
+	}
+	if len(g.addedDiscussions) != 0 {
+		t.Fatalf("expected no discussions after cancellation, got %d", len(g.addedDiscussions))
 	}
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -72,20 +73,22 @@ func TestProvidersReturnCorrectTypes(t *testing.T) {
 
 type mrProviderMockForTest struct{}
 
-func (mrProviderMockForTest) GetMergeRequestChanges() ([]domain.Diff, error) {
+func (mrProviderMockForTest) GetMergeRequestChanges(context.Context) ([]domain.Diff, error) {
 	return nil, nil
 }
-func (mrProviderMockForTest) GetExistingComments() (map[string][]string, error) {
+func (mrProviderMockForTest) GetExistingComments(context.Context) (map[string][]string, error) {
 	return nil, nil
 }
-func (mrProviderMockForTest) AddMergeRequestDiscussion(string, int, string) error { return nil }
-func (mrProviderMockForTest) DeleteBotCommentsExceptResolved() error              { return nil }
+func (mrProviderMockForTest) AddMergeRequestDiscussion(context.Context, string, int, string) error {
+	return nil
+}
+func (mrProviderMockForTest) DeleteBotCommentsExceptResolved(context.Context) error { return nil }
 
 var _ domain.MRProviderPort = (*mrProviderMockForTest)(nil)
 
 type aiProviderMockForTest struct{}
 
-func (o *aiProviderMockForTest) ReviewCode(string) (string, error) {
+func (o *aiProviderMockForTest) ReviewCode(context.Context, string) (string, error) {
 	return `{"issues":[]}`, nil
 }
 

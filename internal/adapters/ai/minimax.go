@@ -1,6 +1,7 @@
 package ai
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/adlandh/ai-mr-reviewer/internal/domain"
@@ -17,7 +18,7 @@ func NewMiniMaxClient(apiKey, baseURL, model string) *MiniMaxClient {
 	return &MiniMaxClient{apiKey: apiKey, baseURL: baseURL, model: model, http: &http.Client{}}
 }
 
-func (c *MiniMaxClient) ReviewCode(diff string) (string, error) {
+func (c *MiniMaxClient) ReviewCode(ctx context.Context, diff string) (string, error) {
 	prompt := domain.BuildReviewPrompt(diff)
 
 	reqBody := chatCompletionRequest{
@@ -30,7 +31,7 @@ func (c *MiniMaxClient) ReviewCode(diff string) (string, error) {
 		Temperature: 0,
 	}
 
-	return sendChatCompletionRequest(c.http, "minimax", c.baseURL, c.apiKey, reqBody, "text", "chatcompletion_v2")
+	return sendChatCompletionRequest(ctx, c.http, "minimax", c.baseURL, c.apiKey, reqBody, "text", "chatcompletion_v2")
 }
 
 var _ domain.AIProviderPort = (*MiniMaxClient)(nil)

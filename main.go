@@ -155,20 +155,12 @@ func newReviewer(cfg domain.ConfigPort, mrProvider domain.MRProviderPort, aiProv
 func runReview(reviewer *application.Reviewer, logger *zap.Logger, cfg domain.ConfigPort) error {
 	logger.Info("starting MR Reviewer")
 
-	result := make(chan error, 1)
+	ctx, cancel := context.WithTimeout(context.Background(), cfg.GetRunTimeout())
+	defer cancel()
 
-	go func() {
-		result <- reviewer.Run()
-	}()
-
-	select {
-	case err := <-result:
-		if err != nil {
-			logger.Error("review failed", zap.Error(err))
-			return fmt.Errorf("run review: %w", err)
-		}
-	case <-time.After(cfg.GetRunTimeout()):
-		return fmt.Errorf("review timed out after %s", cfg.GetRunTimeout())
+	if err := reviewer.Run(ctx); err != nil {
+		logger.Error("review failed", zap.Error(err))
+		return fmt.Errorf("run review: %w", err)
 	}
 
 	logger.Info("review completed")

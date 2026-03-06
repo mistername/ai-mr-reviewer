@@ -42,7 +42,7 @@ func NewOllamaClient(baseURL, apiKey, model string) *OllamaClient {
 	return &OllamaClient{baseURL: baseURL, apiKey: apiKey, model: model, http: &http.Client{}}
 }
 
-func (c *OllamaClient) ReviewCode(diff string) (string, error) {
+func (c *OllamaClient) ReviewCode(ctx context.Context, diff string) (string, error) {
 	prompt := domain.BuildReviewPrompt(diff)
 	reqBody := ollamaRequest{
 		Model: c.model,
@@ -63,7 +63,7 @@ func (c *OllamaClient) ReviewCode(diff string) (string, error) {
 
 	endpoint, _ := url.JoinPath(c.baseURL, "api", "chat")
 
-	httpReq, err := http.NewRequestWithContext(context.Background(), http.MethodPost, endpoint, bytes.NewReader(body))
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(body))
 	if err != nil {
 		return "", fmt.Errorf("create request: %w", err)
 	}
