@@ -1,6 +1,7 @@
 package gitlab
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -30,11 +31,12 @@ func NewClient(url, token, projectID string, iid int, config domain.ConfigPort) 
 	}, nil
 }
 
-func (c *Client) GetMergeRequestChanges() ([]domain.Diff, error) {
+func (c *Client) GetMergeRequestChanges(ctx context.Context) ([]domain.Diff, error) {
 	changes, _, err := c.git.MergeRequests.ListMergeRequestDiffs(
 		c.projectID,
 		int64(c.iid),
 		&gitlab.ListMergeRequestDiffsOptions{},
+		gitlab.WithContext(ctx),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get MR changes: %w", err)
@@ -52,11 +54,12 @@ func (c *Client) GetMergeRequestChanges() ([]domain.Diff, error) {
 	return diffs, nil
 }
 
-func (c *Client) GetExistingComments() (map[string][]string, error) {
+func (c *Client) GetExistingComments(ctx context.Context) (map[string][]string, error) {
 	notes, _, err := c.git.Notes.ListMergeRequestNotes(
 		c.projectID,
 		int64(c.iid),
 		&gitlab.ListMergeRequestNotesOptions{},
+		gitlab.WithContext(ctx),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list notes: %w", err)
@@ -80,7 +83,7 @@ func (c *Client) GetExistingComments() (map[string][]string, error) {
 	return existing, nil
 }
 
-func (c *Client) AddMergeRequestDiscussion(file string, line int, note string) error {
+func (c *Client) AddMergeRequestDiscussion(ctx context.Context, file string, line int, note string) error {
 	commitSHA := c.config.GetCommitSHA()
 	baseSHA := c.config.GetMergeRequestDiffBaseSHA()
 	positionType := "line"
@@ -104,6 +107,7 @@ func (c *Client) AddMergeRequestDiscussion(file string, line int, note string) e
 				NewPath:      &file,
 			},
 		},
+		gitlab.WithContext(ctx),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to add discussion: %w", err)
@@ -112,11 +116,12 @@ func (c *Client) AddMergeRequestDiscussion(file string, line int, note string) e
 	return nil
 }
 
-func (c *Client) DeleteBotCommentsExceptResolved() error {
+func (c *Client) DeleteBotCommentsExceptResolved(ctx context.Context) error {
 	notes, _, err := c.git.Notes.ListMergeRequestNotes(
 		c.projectID,
 		int64(c.iid),
 		&gitlab.ListMergeRequestNotesOptions{},
+		gitlab.WithContext(ctx),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to list notes: %w", err)
@@ -131,7 +136,7 @@ func (c *Client) DeleteBotCommentsExceptResolved() error {
 			continue
 		}
 
-		_, err := c.git.Notes.DeleteMergeRequestNote(c.projectID, int64(c.iid), note.ID)
+		_, err := c.git.Notes.DeleteMergeRequestNote(c.projectID, int64(c.iid), note.ID, gitlab.WithContext(ctx))
 		if err != nil {
 			return fmt.Errorf("failed to delete note: %w", err)
 		}

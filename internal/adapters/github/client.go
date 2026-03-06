@@ -41,8 +41,8 @@ func NewClient(token, owner, repo, prNumber, commitSHA, commentPrefix string) (*
 	}, nil
 }
 
-func (c *Client) GetMergeRequestChanges() ([]domain.Diff, error) {
-	files, _, err := c.client.PullRequests.ListFiles(context.Background(), c.owner, c.repo, c.prNumber, &github.ListOptions{})
+func (c *Client) GetMergeRequestChanges(ctx context.Context) ([]domain.Diff, error) {
+	files, _, err := c.client.PullRequests.ListFiles(ctx, c.owner, c.repo, c.prNumber, &github.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get PR files: %w", err)
 	}
@@ -65,10 +65,10 @@ func (c *Client) GetMergeRequestChanges() ([]domain.Diff, error) {
 	return diffs, nil
 }
 
-func (c *Client) GetExistingComments() (map[string][]string, error) {
+func (c *Client) GetExistingComments(ctx context.Context) (map[string][]string, error) {
 	existing := make(map[string][]string)
 
-	reviewComments, _, err := c.client.PullRequests.ListComments(context.Background(), c.owner, c.repo, c.prNumber, &github.PullRequestListCommentsOptions{})
+	reviewComments, _, err := c.client.PullRequests.ListComments(ctx, c.owner, c.repo, c.prNumber, &github.PullRequestListCommentsOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list PR review comments: %w", err)
 	}
@@ -83,7 +83,7 @@ func (c *Client) GetExistingComments() (map[string][]string, error) {
 	return existing, nil
 }
 
-func (c *Client) AddMergeRequestDiscussion(file string, line int, note string) error {
+func (c *Client) AddMergeRequestDiscussion(ctx context.Context, file string, line int, note string) error {
 	prComment := &github.PullRequestComment{
 		Body:     &note,
 		Path:     &file,
@@ -92,14 +92,14 @@ func (c *Client) AddMergeRequestDiscussion(file string, line int, note string) e
 		Side:     github.Ptr("RIGHT"),
 	}
 
-	_, _, err := c.client.PullRequests.CreateComment(context.Background(), c.owner, c.repo, c.prNumber, prComment)
+	_, _, err := c.client.PullRequests.CreateComment(ctx, c.owner, c.repo, c.prNumber, prComment)
 	if err != nil {
 		body := fmt.Sprintf("%s:**File: %s**\n\n%s", c.commentPrefix, file, note)
 		issueComment := &github.IssueComment{
 			Body: &body,
 		}
 
-		_, _, err = c.client.Issues.CreateComment(context.Background(), c.owner, c.repo, c.prNumber, issueComment)
+		_, _, err = c.client.Issues.CreateComment(ctx, c.owner, c.repo, c.prNumber, issueComment)
 		if err != nil {
 			return fmt.Errorf("failed to add PR comment: %w", err)
 		}
@@ -108,17 +108,17 @@ func (c *Client) AddMergeRequestDiscussion(file string, line int, note string) e
 	return nil
 }
 
-func (c *Client) DeleteBotCommentsExceptResolved() error {
-	err := c.deleteBotReviewComments()
+func (c *Client) DeleteBotCommentsExceptResolved(ctx context.Context) error {
+	err := c.deleteBotReviewComments(ctx)
 	if err != nil {
 		return err
 	}
 
-	return c.deleteBotIssueComments()
+	return c.deleteBotIssueComments(ctx)
 }
 
-func (c *Client) deleteBotReviewComments() error {
-	reviewComments, _, err := c.client.PullRequests.ListComments(context.Background(), c.owner, c.repo, c.prNumber, &github.PullRequestListCommentsOptions{})
+func (c *Client) deleteBotReviewComments(ctx context.Context) error {
+	reviewComments, _, err := c.client.PullRequests.ListComments(ctx, c.owner, c.repo, c.prNumber, &github.PullRequestListCommentsOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to list PR review comments: %w", err)
 	}
@@ -132,7 +132,7 @@ func (c *Client) deleteBotReviewComments() error {
 			continue
 		}
 
-		_, err = c.client.PullRequests.DeleteComment(context.Background(), c.owner, c.repo, *comment.ID)
+		_, err = c.client.PullRequests.DeleteComment(ctx, c.owner, c.repo, *comment.ID)
 		if err != nil {
 			return fmt.Errorf("failed to delete PR review comment: %w", err)
 		}
@@ -141,8 +141,8 @@ func (c *Client) deleteBotReviewComments() error {
 	return nil
 }
 
-func (c *Client) deleteBotIssueComments() error {
-	issueComments, _, err := c.client.Issues.ListComments(context.Background(), c.owner, c.repo, c.prNumber, &github.IssueListCommentsOptions{})
+func (c *Client) deleteBotIssueComments(ctx context.Context) error {
+	issueComments, _, err := c.client.Issues.ListComments(ctx, c.owner, c.repo, c.prNumber, &github.IssueListCommentsOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to list PR issue comments: %w", err)
 	}
@@ -156,7 +156,7 @@ func (c *Client) deleteBotIssueComments() error {
 			continue
 		}
 
-		_, err = c.client.Issues.DeleteComment(context.Background(), c.owner, c.repo, *comment.ID)
+		_, err = c.client.Issues.DeleteComment(ctx, c.owner, c.repo, *comment.ID)
 		if err != nil {
 			return fmt.Errorf("failed to delete PR issue comment: %w", err)
 		}

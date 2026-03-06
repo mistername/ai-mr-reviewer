@@ -1,6 +1,7 @@
 package application
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"maps"
@@ -66,21 +67,21 @@ func NewReviewer(config domain.ConfigPort, mrProvider domain.MRProviderPort, aiP
 	return &Reviewer{config: config, mrProvider: mrProvider, aiProvider: aiProvider, logger: logger}
 }
 
-func (r *Reviewer) Run() error {
+func (r *Reviewer) Run(ctx context.Context) error {
 	if r.config.GetDeleteBotComments() {
-		if err := r.mrProvider.DeleteBotCommentsExceptResolved(); err != nil {
+		if err := r.mrProvider.DeleteBotCommentsExceptResolved(ctx); err != nil {
 			r.logger.Warn("cannot delete bot comments", zap.Error(err))
 		}
 	}
 
-	existing, err := r.mrProvider.GetExistingComments()
+	existing, err := r.mrProvider.GetExistingComments(ctx)
 	if err != nil {
 		r.logger.Warn("cannot read existing comments", zap.Error(err))
 
 		existing = map[string][]string{}
 	}
 
-	diffs, err := r.mrProvider.GetMergeRequestChanges()
+	diffs, err := r.mrProvider.GetMergeRequestChanges(ctx)
 	if err != nil {
 		return fmt.Errorf("get MR changes: %w", err)
 	}
@@ -92,7 +93,7 @@ func (r *Reviewer) Run() error {
 		return nil
 	}
 
-	if err := r.reviewDiffs(filteredDiffs); err != nil {
+	if err := r.reviewDiffs(ctx, filteredDiffs); err != nil {
 		return fmt.Errorf("review diffs: %w", err)
 	}
 
@@ -125,10 +126,10 @@ func hasExistingComments(path string, existing map[string][]string, prefix strin
 	return false
 }
 
-func (r *Reviewer) reviewDiffs(diffs []domain.Diff) error {
+func (r *Reviewer) reviewDiffs(ctx context.Context, diffs []domain.Diff) error {
 	combinedDiff := buildCombinedDiff(diffs)
 
-	reviewText, err := r.aiProvider.ReviewCode(combinedDiff)
+	reviewText, err := r.aiProvider.ReviewCode(ctx, combinedDiff)
 	if err != nil {
 		return fmt.Errorf("review code: %w", err)
 	}
@@ -159,7 +160,7 @@ func (r *Reviewer) reviewDiffs(diffs []domain.Diff) error {
 		}
 
 		body := fmt.Sprintf("%s:**%s**: %s", prefix, strings.ToUpper(issue.Severity), issue.Message)
-		if err := r.mrProvider.AddMergeRequestDiscussion(filePath, issue.Line, body); err != nil {
+		if err := r.mrProvider.AddMergeRequestDiscussion(ctx, filePath, issue.Line, body); err != nil {
 			r.logger.Warn("failed to add comment", zap.String("path", filePath), zap.Int("line", issue.Line), zap.Error(err))
 		}
 	}

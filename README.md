@@ -1,6 +1,6 @@
 # AI MR Reviewer
 
-AI-powered code review bot for GitLab Merge Requests and GitHub Pull Requests supporting multiple AI providers (Ollama, OpenAI, Anthropic, MiniMax).
+AI-powered code review bot for GitLab Merge Requests and GitHub Pull Requests supporting multiple AI providers (Ollama, OpenAI, Anthropic, MiniMax, Copilot).
 
 ## Overview
 
@@ -9,7 +9,7 @@ This tool automatically reviews code changes in Merge Requests using AI. It anal
 ## Features
 
 - Supports both GitLab Merge Requests and GitHub Pull Requests
-- AI-powered analysis (Ollama, OpenAI, Anthropic, MiniMax)
+- AI-powered analysis (Ollama, OpenAI, Anthropic, MiniMax, Copilot)
 - Inline comments with line numbers
 - Configurable comment prefix and cleanup of previous bot comments
 - Hexagonal architecture
@@ -18,13 +18,14 @@ This tool automatically reviews code changes in Merge Requests using AI. It anal
 
 ## Requirements
 
-- Go 1.25+
+- Go 1.26+
 - GitLab API Token or GitHub Personal Access Token
 - One of:
   - Ollama server with a model (e.g., llama3.2)
   - OpenAI API key
   - Anthropic API key
   - MiniMax API key
+  - GitHub token (for Copilot/GitHub Models)
 
 ## Configuration
 
@@ -59,7 +60,7 @@ This tool automatically reviews code changes in Merge Requests using AI. It anal
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `AI_PROVIDER` | AI provider: `ollama`, `openai`, `anthropic`, or `minimax` | `ollama` |
+| `AI_PROVIDER` | AI provider: `ollama`, `openai`, `anthropic`, `minimax`, or `copilot` | `ollama` |
 
 ### Review Behavior
 
@@ -67,6 +68,7 @@ This tool automatically reviews code changes in Merge Requests using AI. It anal
 |----------|-------------|---------|
 | `COMMENT_PREFIX` | Prefix used for every bot comment (`<prefix>:`) | `ai-mr-reviewer` |
 | `DELETE_BOT_COMMENTS` | Delete previous unresolved bot comments before new run | `true` |
+| `RUN_TIMEOUT` | Max duration of a single review run | `10m` |
 
 ### Ollama Configuration
 
@@ -99,6 +101,14 @@ This tool automatically reviews code changes in Merge Requests using AI. It anal
 | `MINIMAX_API_KEY` | MiniMax API key | - |
 | `MINIMAX_BASE_URL` | MiniMax API base URL | `https://api.minimax.io/v1` |
 | `MINIMAX_MODEL` | MiniMax model name | `MiniMax-M2.5` |
+
+### Copilot Configuration
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `GITHUB_TOKEN` | GitHub token used as bearer token for Copilot | - |
+| `COPILOT_BASE_URL` | Copilot-compatible base URL | `https://models.github.ai/inference` |
+| `COPILOT_MODEL` | Copilot-compatible model name | `openai/gpt-4.1` |
 
 ## Usage
 
@@ -145,6 +155,22 @@ export MINIMAX_API_KEY="your-minimax-key"
 go run ./main.go
 ```
 
+### Running locally (GitHub + Copilot)
+
+```bash
+export VCS_PROVIDER="github"
+export GITHUB_TOKEN="your-github-token"
+export GITHUB_OWNER="your-username"
+export GITHUB_REPO="your-repo"
+export GITHUB_PR_NUMBER="123"
+export CI_COMMIT_SHA="abc123"
+export AI_PROVIDER="copilot"
+export COPILOT_BASE_URL="https://models.github.ai/inference" # optional
+export COPILOT_MODEL="openai/gpt-4.1"                         # optional
+
+go run ./main.go
+```
+
 ### Running locally (GitLab + Anthropic)
 
 ```bash
@@ -168,7 +194,7 @@ stages:
 
 ai-code-review:
   stage: review
-  image: golang:1.25-alpine
+  image: golang:1.26-alpine
   services:
     - name: ollama/ollama:latest
       alias: ollama
@@ -214,7 +240,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.25'
+          go-version: '1.26'
       - name: Install and Run Review
         env:
           VCS_PROVIDER: github
@@ -232,7 +258,7 @@ OpenAI example (`env` additions):
 ```yaml
           AI_PROVIDER: openai
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          OPENAI_MODEL: GPT-5.2-Codex
+          OPENAI_MODEL: gpt-5-codex
 ```
 
 Ollama example (`env` additions):
@@ -266,6 +292,15 @@ MiniMax example (`env` additions):
           AI_PROVIDER: minimax
           MINIMAX_API_KEY: ${{ secrets.MINIMAX_API_KEY }}
           MINIMAX_MODEL: MiniMax-M2.5
+```
+
+Copilot example (`env` additions):
+
+```yaml
+          AI_PROVIDER: copilot
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COPILOT_BASE_URL: https://models.github.ai/inference
+          COPILOT_MODEL: openai/gpt-4.1
 ```
 
 ## GitLab Token Setup
@@ -316,7 +351,7 @@ internal/
   adapters/
     gitlab/         # GitLab API client
     github/         # GitHub API client
-    ai/             # AI provider adapters (Ollama, OpenAI, Anthropic, MiniMax)
+    ai/             # AI provider adapters (Ollama, OpenAI, Anthropic, MiniMax, Copilot)
     config/         # Configuration
 ```
 

@@ -1,14 +1,21 @@
 package domain
 
+import (
+	"context"
+	"time"
+)
+
+//go:generate go tool mockery
+
 type MRProviderPort interface {
-	GetMergeRequestChanges() ([]Diff, error)
-	GetExistingComments() (map[string][]string, error)
-	AddMergeRequestDiscussion(file string, line int, note string) error
-	DeleteBotCommentsExceptResolved() error
+	GetMergeRequestChanges(ctx context.Context) ([]Diff, error)
+	GetExistingComments(ctx context.Context) (map[string][]string, error)
+	AddMergeRequestDiscussion(ctx context.Context, file string, line int, note string) error
+	DeleteBotCommentsExceptResolved(ctx context.Context) error
 }
 
 type AIProviderPort interface {
-	ReviewCode(diff string) (string, error)
+	ReviewCode(ctx context.Context, diff string) (string, error)
 }
 
 type ConfigPort interface {
@@ -36,6 +43,9 @@ type ConfigPort interface {
 	GetMiniMaxAPIKey() string
 	GetMiniMaxBaseURL() string
 	GetMiniMaxModel() string
+	GetCopilotBaseURL() string
+	GetCopilotModel() string
+	GetRunTimeout() time.Duration
 	GetDeleteBotComments() bool
 	GetCommentPrefix() string
 }

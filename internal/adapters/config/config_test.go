@@ -1,6 +1,9 @@
 package config
 
-import "testing"
+import (
+	"testing"
+	"time"
+)
 
 func TestNewConfigWithDefaults(t *testing.T) {
 	t.Setenv("VCS_PROVIDER", "gitlab")
@@ -38,6 +41,9 @@ func TestNewConfigWithDefaults(t *testing.T) {
 	}
 	if cfg.GetMergeRequestDiffBaseSHA() != "def456" {
 		t.Fatalf("unexpected MergeRequestDiffBaseSHA: %s", cfg.GetMergeRequestDiffBaseSHA())
+	}
+	if cfg.GetRunTimeout() != 10*time.Minute {
+		t.Fatalf("unexpected RunTimeout: %s", cfg.GetRunTimeout())
 	}
 }
 

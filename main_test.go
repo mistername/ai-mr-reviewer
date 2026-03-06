@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"testing"
+	"time"
 
 	"github.com/adlandh/ai-mr-reviewer/internal/domain"
 	"go.uber.org/fx"
@@ -71,20 +73,22 @@ func TestProvidersReturnCorrectTypes(t *testing.T) {
 
 type mrProviderMockForTest struct{}
 
-func (g *mrProviderMockForTest) GetMergeRequestChanges() ([]domain.Diff, error) {
+func (mrProviderMockForTest) GetMergeRequestChanges(context.Context) ([]domain.Diff, error) {
 	return nil, nil
 }
-func (g *mrProviderMockForTest) GetExistingComments() (map[string][]string, error) {
+func (mrProviderMockForTest) GetExistingComments(context.Context) (map[string][]string, error) {
 	return nil, nil
 }
-func (g *mrProviderMockForTest) AddMergeRequestDiscussion(string, int, string) error { return nil }
-func (g *mrProviderMockForTest) DeleteBotCommentsExceptResolved() error              { return nil }
+func (mrProviderMockForTest) AddMergeRequestDiscussion(context.Context, string, int, string) error {
+	return nil
+}
+func (mrProviderMockForTest) DeleteBotCommentsExceptResolved(context.Context) error { return nil }
 
 var _ domain.MRProviderPort = (*mrProviderMockForTest)(nil)
 
 type aiProviderMockForTest struct{}
 
-func (o *aiProviderMockForTest) ReviewCode(string) (string, error) {
+func (o *aiProviderMockForTest) ReviewCode(context.Context, string) (string, error) {
 	return `{"issues":[]}`, nil
 }
 
@@ -92,32 +96,35 @@ var _ domain.AIProviderPort = (*aiProviderMockForTest)(nil)
 
 type configMockForTest struct{}
 
-func (c *configMockForTest) GetVCSProvider() string             { return "gitlab" }
-func (c *configMockForTest) GetGitLabURL() string               { return "https://gitlab.com" }
-func (c *configMockForTest) GetGitLabToken() string             { return "token" }
-func (c *configMockForTest) GetProjectID() string               { return "123" }
-func (c *configMockForTest) GetMergeRequestIID() string         { return "1" }
-func (c *configMockForTest) GetCommitSHA() string               { return "abc123" }
-func (c *configMockForTest) GetMergeRequestDiffBaseSHA() string { return "def456" }
-func (c *configMockForTest) GetGitHubToken() string             { return "" }
-func (c *configMockForTest) GetGitHubOwner() string             { return "" }
-func (c *configMockForTest) GetGitHubRepo() string              { return "" }
-func (c *configMockForTest) GetGitHubPRNumber() string          { return "" }
-func (c *configMockForTest) GetAIProvider() string              { return "ollama" }
-func (c *configMockForTest) GetOllamaURL() string               { return "http://localhost:11434" }
-func (c *configMockForTest) GetOllamaAPIKey() string            { return "" }
-func (c *configMockForTest) GetOllamaModel() string             { return "llama3.2" }
-func (c *configMockForTest) GetOpenAIAPIKey() string            { return "" }
-func (c *configMockForTest) GetOpenAIBaseURL() string           { return "https://api.openai.com/v1" }
-func (c *configMockForTest) GetOpenAIModel() string             { return "gpt-4o" }
-func (c *configMockForTest) GetAnthropicAuthToken() string      { return "" }
-func (c *configMockForTest) GetAnthropicBaseURL() string        { return "https://api.anthropic.com/v1/" }
-func (c *configMockForTest) GetAnthropicModel() string          { return "claude-sonnet-4-20250514" }
-func (c *configMockForTest) GetDeleteBotComments() bool         { return false }
-func (c *configMockForTest) GetCommentPrefix() string           { return "ai-mr-reviewer" }
-func (c *configMockForTest) GetMiniMaxAPIKey() string           { return "" }
-func (c *configMockForTest) GetMiniMaxBaseURL() string          { return "https://api.minimax.chat/v1" }
-func (c *configMockForTest) GetMiniMaxModel() string            { return "MiniMax-M2.5" }
+func (configMockForTest) GetVCSProvider() string             { return "gitlab" }
+func (configMockForTest) GetGitLabURL() string               { return "https://gitlab.com" }
+func (configMockForTest) GetGitLabToken() string             { return "token" }
+func (configMockForTest) GetProjectID() string               { return "123" }
+func (configMockForTest) GetMergeRequestIID() string         { return "1" }
+func (configMockForTest) GetCommitSHA() string               { return "abc123" }
+func (configMockForTest) GetMergeRequestDiffBaseSHA() string { return "def456" }
+func (configMockForTest) GetGitHubToken() string             { return "" }
+func (configMockForTest) GetGitHubOwner() string             { return "" }
+func (configMockForTest) GetGitHubRepo() string              { return "" }
+func (configMockForTest) GetGitHubPRNumber() string          { return "" }
+func (configMockForTest) GetAIProvider() string              { return "ollama" }
+func (configMockForTest) GetOllamaURL() string               { return "http://localhost:11434" }
+func (configMockForTest) GetOllamaAPIKey() string            { return "" }
+func (configMockForTest) GetOllamaModel() string             { return "llama3.2" }
+func (configMockForTest) GetOpenAIAPIKey() string            { return "" }
+func (configMockForTest) GetOpenAIBaseURL() string           { return "https://api.openai.com/v1" }
+func (configMockForTest) GetOpenAIModel() string             { return "gpt-4o" }
+func (configMockForTest) GetAnthropicAuthToken() string      { return "" }
+func (configMockForTest) GetAnthropicBaseURL() string        { return "https://api.anthropic.com/v1/" }
+func (configMockForTest) GetAnthropicModel() string          { return "claude-sonnet-4-20250514" }
+func (configMockForTest) GetDeleteBotComments() bool         { return false }
+func (configMockForTest) GetCommentPrefix() string           { return "ai-mr-reviewer" }
+func (configMockForTest) GetMiniMaxAPIKey() string           { return "" }
+func (configMockForTest) GetMiniMaxBaseURL() string          { return "https://api.minimax.chat/v1" }
+func (configMockForTest) GetMiniMaxModel() string            { return "MiniMax-M2.5" }
+func (configMockForTest) GetCopilotBaseURL() string          { return "https://models.github.ai/inference" }
+func (configMockForTest) GetCopilotModel() string            { return "openai/gpt-4.1" }
+func (configMockForTest) GetRunTimeout() time.Duration       { return 10 * time.Minute }
 
 var _ domain.ConfigPort = (*configMockForTest)(nil)
 

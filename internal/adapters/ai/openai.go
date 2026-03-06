@@ -1,6 +1,7 @@
 package ai
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/adlandh/ai-mr-reviewer/internal/domain"
@@ -17,7 +18,7 @@ func NewOpenAIClient(apiKey, baseURL, model string) *OpenAIClient {
 	return &OpenAIClient{apiKey: apiKey, baseURL: baseURL, model: model, http: &http.Client{}}
 }
 
-func (c *OpenAIClient) ReviewCode(diff string) (string, error) {
+func (c *OpenAIClient) ReviewCode(ctx context.Context, diff string) (string, error) {
 	prompt := domain.BuildReviewPrompt(diff)
 
 	reqBody := chatCompletionRequest{
@@ -30,7 +31,7 @@ func (c *OpenAIClient) ReviewCode(diff string) (string, error) {
 		Temperature: 0,
 	}
 
-	return sendChatCompletionRequest(c.http, "openai", c.baseURL, c.apiKey, reqBody, "chat", "completions")
+	return sendChatCompletionRequest(ctx, c.http, "openai", c.baseURL, c.apiKey, reqBody, "chat", "completions")
 }
 
 var _ domain.AIProviderPort = (*OpenAIClient)(nil)

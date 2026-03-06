@@ -18,8 +18,11 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v6
         with:
-          go-version: 1.25
+          go-version: 1.26
           cache: true
+
+      - name: Generate Code
+        run: go generate ./...
 
       - name: Download golangci-lint config
         run: curl -sS https://raw.githubusercontent.com/adlandh/golangci-lint-config/refs/heads/main/.golangci.yml -o .golangci.yml

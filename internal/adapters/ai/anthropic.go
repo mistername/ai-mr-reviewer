@@ -37,7 +37,7 @@ func NewAnthropicClient(apiKey, baseURL, model string) *AnthropicClient {
 	return &AnthropicClient{apiKey: apiKey, baseURL: baseURL, model: model, http: &http.Client{}}
 }
 
-func (c *AnthropicClient) ReviewCode(diff string) (string, error) {
+func (c *AnthropicClient) ReviewCode(ctx context.Context, diff string) (string, error) {
 	prompt := domain.BuildReviewPrompt(diff)
 	reqBody := anthropicRequest{
 		Model: c.model,
@@ -56,7 +56,7 @@ func (c *AnthropicClient) ReviewCode(diff string) (string, error) {
 
 	endpoint, _ := url.JoinPath(c.baseURL, "messages")
 
-	httpReq, err := http.NewRequestWithContext(context.Background(), http.MethodPost, endpoint, bytes.NewReader(body))
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(body))
 	if err != nil {
 		return "", fmt.Errorf("create request: %w", err)
 	}
@@ -65,7 +65,7 @@ func (c *AnthropicClient) ReviewCode(diff string) (string, error) {
 	httpReq.Header.Set("x-api-key", c.apiKey)
 	httpReq.Header.Set("anthropic-version", "2023-06-01")
 
-	resp, err := c.http.Do(httpReq)
+	resp, err := c.http.Do(httpReq) //nolint:gosec
 	if err != nil {
 		return "", fmt.Errorf("call anthropic: %w", err)
 	}
