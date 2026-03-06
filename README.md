@@ -4,7 +4,38 @@ AI-powered code review bot for GitLab Merge Requests and GitHub Pull Requests su
 
 ## Overview
 
-This tool automatically reviews code changes in Merge Requests using AI. It analyzes the full MR/PR diff in a single request and adds inline comments with issues found by the AI model.
+This tool automatically reviews code changes in merge requests and pull requests using AI. It analyzes the full MR/PR diff in a single request and posts inline review comments for issues found by the model.
+
+## Quick Start
+
+Local GitHub review with OpenAI:
+
+```bash
+export VCS_PROVIDER="github"
+export GITHUB_TOKEN="your-github-token"
+export GITHUB_OWNER="your-username"
+export GITHUB_REPO="your-repo"
+export GITHUB_PR_NUMBER="123"
+export CI_COMMIT_SHA="abc123"
+export AI_PROVIDER="openai"
+export OPENAI_API_KEY="your-openai-key"
+
+go run ./main.go
+```
+
+Local GitLab review with Ollama:
+
+```bash
+export VCS_PROVIDER="gitlab"
+export GITLAB_TOKEN="your-gitlab-token"
+export CI_PROJECT_ID="123"
+export CI_MERGE_REQUEST_IID="1"
+export CI_COMMIT_SHA="abc123"
+export CI_MERGE_REQUEST_DIFF_BASE_SHA="def456"
+export AI_PROVIDER="ollama"
+
+go run ./main.go
+```
 
 ## Features
 
@@ -19,7 +50,7 @@ This tool automatically reviews code changes in Merge Requests using AI. It anal
 ## Requirements
 
 - Go 1.26+
-- GitLab API Token or GitHub Personal Access Token
+- GitLab API token or GitHub token
 - One of:
   - Ollama server with a model (e.g., llama3.2)
   - OpenAI API key
@@ -50,7 +81,7 @@ This tool automatically reviews code changes in Merge Requests using AI. It anal
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `GITHUB_TOKEN` | GitHub Personal Access Token | - |
+| `GITHUB_TOKEN` | GitHub token used for PR access and, for `copilot`, GitHub Models auth | - |
 | `GITHUB_OWNER` | GitHub repository owner | - |
 | `GITHUB_REPO` | GitHub repository name | - |
 | `GITHUB_PR_NUMBER` | Pull Request number | - |
@@ -106,11 +137,13 @@ This tool automatically reviews code changes in Merge Requests using AI. It anal
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `GITHUB_TOKEN` | GitHub token used as bearer token for Copilot | - |
-| `COPILOT_BASE_URL` | Copilot-compatible base URL | `https://models.github.ai/inference` |
-| `COPILOT_MODEL` | Copilot-compatible model name | `openai/gpt-4.1` |
+| `GITHUB_TOKEN` | GitHub token used as a bearer token for GitHub Models | - |
+| `COPILOT_BASE_URL` | GitHub Models-compatible base URL | `https://models.github.ai/inference` |
+| `COPILOT_MODEL` | GitHub Models-compatible model name | `openai/gpt-4.1` |
 
 ## Usage
+
+The sections below show full environment examples for the supported provider combinations.
 
 ### Running locally (GitLab + Ollama)
 
@@ -234,6 +267,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      models: read
       pull-requests: write
     steps:
       - uses: actions/checkout@v6
@@ -253,12 +287,14 @@ jobs:
         run: go install github.com/adlandh/ai-mr-reviewer@latest && ai-mr-reviewer
 ```
 
+`models: read` is only required when `AI_PROVIDER=copilot`. It is safe to leave enabled in the base workflow if you switch providers.
+
 OpenAI example (`env` additions):
 
 ```yaml
           AI_PROVIDER: openai
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          OPENAI_MODEL: gpt-5-codex
+          OPENAI_MODEL: GPT-5.2-Codex
 ```
 
 Ollama example (`env` additions):
@@ -303,6 +339,15 @@ Copilot example (`env` additions):
           COPILOT_MODEL: openai/gpt-4.1
 ```
 
+Copilot/GitHub Models workflow permission addition:
+
+```yaml
+    permissions:
+      contents: read
+      models: read
+      pull-requests: write
+```
+
 ## GitLab Token Setup
 
 1. Go to GitLab → Settings → Access Tokens
@@ -313,17 +358,25 @@ Copilot example (`env` additions):
 
 ## GitHub Token Setup
 
-1. Go to GitHub → Settings → Developer settings → Personal access tokens
-2. Create a new token with:
-   - `repo` scope (for private repos) or `public_repo` scope (for public repos)
-3. Add the token as a secret in your repository
+For local runs with a personal token:
+
+1. Go to GitHub → Settings → Developer settings → Personal access tokens.
+2. Create a token with:
+   - `repo` scope for private repositories, or `public_repo` for public repositories
+   - access to GitHub Models if you use `AI_PROVIDER=copilot`
+3. Export it as `GITHUB_TOKEN`.
+
+For GitHub Actions:
+
+1. Use `${{ secrets.GITHUB_TOKEN }}` for repository access.
+2. If you use `AI_PROVIDER=copilot`, grant the workflow `models: read` so the workflow token can call the GitHub Models inference API.
 
 ## Development
 
 ### Build
 
 ```bash
-go install github.com/adlandh/ai-mr-reviewer@latest
+go install .
 ```
 
 ### Test
@@ -354,6 +407,12 @@ internal/
     ai/             # AI provider adapters (Ollama, OpenAI, Anthropic, MiniMax, Copilot)
     config/         # Configuration
 ```
+
+## Notes
+
+- Reviews are sent as a single combined diff to the configured model. Very large PRs or MRs can hit provider context limits.
+- `RUN_TIMEOUT` bounds the full review run, including VCS API calls and model inference.
+- On GitHub, inline comments may fall back to a general PR comment if GitHub rejects the exact line placement.
 
 ## License
 
