@@ -118,7 +118,7 @@ func TestClientAddMergeRequestDiscussionFallsBackToIssueComment(t *testing.T) {
 		t.Fatalf("AddMergeRequestDiscussion returned error: %v", err)
 	}
 
-	want := "ai-mr-reviewer:**File: foo.go**\n\nplease fix this"
+	want := "ai-mr-reviewer: **File: foo.go**\n\nplease fix this"
 	if issueCommentBody != want {
 		t.Fatalf("unexpected fallback issue comment body: %q", issueCommentBody)
 	}
