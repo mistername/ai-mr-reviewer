@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 	"testing"
@@ -15,6 +16,9 @@ import (
 const testGitHubBaseURL = "https://api.github.test/"
 const testGitHubPRPath = "/repos/acme/repo/pulls/7"
 const testGitHubIssuePath = "/repos/acme/repo/issues/7"
+const errNewClient = "NewClient returned error: %v"
+const errUnexpectedRequest = "unexpected request: %s %s"
+const testNewGoPath = "new.go"
 
 func newTestGitHubAPIClient(t *testing.T, transport httpstub.RoundTripFunc) *gogithub.Client {
 	t.Helper()
@@ -35,7 +39,7 @@ func TestNewClientParsesPullRequestNumber(t *testing.T) {
 
 	client, err := NewClient("token", "acme", "repo", "7", "abc123", "ai-mr-reviewer")
 	if err != nil {
-		t.Fatalf("NewClient returned error: %v", err)
+		t.Fatalf(errNewClient, err)
 	}
 	if client.owner != "acme" || client.repo != "repo" || client.prNumber != 7 {
 		t.Fatalf("unexpected client fields: %+v", client)
@@ -62,10 +66,10 @@ func TestClientGetMergeRequestChanges(t *testing.T) {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
 		}
 
-		return httpstub.JSONResponse(http.StatusOK, `[
-				{"filename":"new.go","patch":"@@ -1 +1 @@","previous_filename":"old.go"},
+		return httpstub.JSONResponse(http.StatusOK, fmt.Sprintf(`[
+				{"filename":"%s","patch":"@@ -1 +1 @@","previous_filename":"old.go"},
 				{"filename":"same.go","patch":"@@ -2 +2 @@"}
-			]`), nil
+			]`, testNewGoPath)), nil
 	}))
 
 	client := &Client{
@@ -82,7 +86,7 @@ func TestClientGetMergeRequestChanges(t *testing.T) {
 	if len(diffs) != 2 {
 		t.Fatalf("expected 2 diffs, got %d", len(diffs))
 	}
-	if diffs[0].NewPath != "new.go" || diffs[0].OldPath != "old.go" || diffs[0].Content != "@@ -1 +1 @@" {
+	if diffs[0].NewPath != testNewGoPath || diffs[0].OldPath != "old.go" || diffs[0].Content != "@@ -1 +1 @@" {
 		t.Fatalf("unexpected first diff: %+v", diffs[0])
 	}
 	if diffs[1].NewPath != "same.go" || diffs[1].OldPath != "" || diffs[1].Content != "@@ -2 +2 @@" {
@@ -108,7 +112,7 @@ func TestClientAddMergeRequestDiscussionFallsBackToIssueComment(t *testing.T) {
 			issueCommentBody = payload.Body
 			return httpstub.JSONResponse(http.StatusCreated, `{"id":1}`), nil
 		default:
-			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+			t.Fatalf(errUnexpectedRequest, r.Method, r.URL.Path)
 			return nil, nil
 		}
 	}))
@@ -138,7 +142,7 @@ func TestClientGetExistingCommentsReturnsReviewCommentsWithPathAndLine(t *testin
 
 	apiClient := newTestGitHubAPIClient(t, httpstub.RoundTripFunc(func(r *http.Request) (*http.Response, error) {
 		if r.Method != http.MethodGet || r.URL.Path != testGitHubPRPath+"/comments" {
-			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+			t.Fatalf(errUnexpectedRequest, r.Method, r.URL.Path)
 		}
 
 		return httpstub.JSONResponse(http.StatusOK, `[
@@ -189,7 +193,7 @@ func TestClientDeleteBotCommentsExceptResolvedDeletesBotReviewAndIssueComments(t
 			deletedPaths = append(deletedPaths, r.URL.Path)
 			return &http.Response{StatusCode: http.StatusNoContent, Body: http.NoBody, Header: make(http.Header)}, nil
 		default:
-			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+			t.Fatalf(errUnexpectedRequest, r.Method, r.URL.Path)
 			return nil, nil
 		}
 	}))
@@ -224,7 +228,7 @@ func TestClientAddMergeRequestDiscussionReturnsErrorWhenFallbackFails(t *testing
 		case r.Method == http.MethodPost && r.URL.Path == testGitHubIssuePath+"/comments":
 			return nil, errors.New("issue endpoint down")
 		default:
-			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+			t.Fatalf(errUnexpectedRequest, r.Method, r.URL.Path)
 			return nil, nil
 		}
 	}))

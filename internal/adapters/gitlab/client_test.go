@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 	"testing"
@@ -16,6 +17,10 @@ import (
 const testGitLabBaseURL = "https://gitlab.example.com/api/v4"
 const testGitLabMRPath = "/api/v4/projects/123/merge_requests/5"
 const testGitLabNotesPathPrefix = testGitLabMRPath + "/notes/"
+const errNewClient = "NewClient returned error: %v"
+const errUnexpectedRequest = "unexpected request: %s %s"
+const errCreateStubGitLabClient = "create stub gitlab client: %v"
+const testNewGoPath = "new.go"
 
 type discussionRequest struct {
 	Body     string `json:"body"`
@@ -48,20 +53,20 @@ func TestClientGetMergeRequestChangesReturnsDiffs(t *testing.T) {
 
 	client, err := NewClient(testGitLabBaseURL, "token", "123", 5, cfg)
 	if err != nil {
-		t.Fatalf("NewClient returned error: %v", err)
+		t.Fatalf(errNewClient, err)
 	}
 	client.git, err = newStubGitLabClient(t, httpstub.RoundTripFunc(func(r *http.Request) (*http.Response, error) {
 		if r.Method != http.MethodGet || r.URL.Path != testGitLabMRPath+"/diffs" {
-			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+			t.Fatalf(errUnexpectedRequest, r.Method, r.URL.Path)
 		}
 
-		return httpstub.JSONResponse(http.StatusOK, `[
-			{"old_path":"old.go","new_path":"new.go","diff":"@@ -1 +1 @@"},
+		return httpstub.JSONResponse(http.StatusOK, fmt.Sprintf(`[
+			{"old_path":"old.go","new_path":"%s","diff":"@@ -1 +1 @@"},
 			{"old_path":"same.go","new_path":"same.go","diff":"@@ -2 +2 @@"}
-		]`), nil
+		]`, testNewGoPath)), nil
 	}))
 	if err != nil {
-		t.Fatalf("create stub gitlab client: %v", err)
+		t.Fatalf(errCreateStubGitLabClient, err)
 	}
 
 	diffs, err := client.GetMergeRequestChanges(context.Background())
@@ -71,7 +76,7 @@ func TestClientGetMergeRequestChangesReturnsDiffs(t *testing.T) {
 	if len(diffs) != 2 {
 		t.Fatalf("expected 2 diffs, got %d", len(diffs))
 	}
-	if diffs[0].OldPath != "old.go" || diffs[0].NewPath != "new.go" || diffs[0].Content != "@@ -1 +1 @@" {
+	if diffs[0].OldPath != "old.go" || diffs[0].NewPath != testNewGoPath || diffs[0].Content != "@@ -1 +1 @@" {
 		t.Fatalf("unexpected first diff: %+v", diffs[0])
 	}
 }
@@ -88,7 +93,7 @@ func TestClientAddMergeRequestDiscussionIncludesPositionAndPrefix(t *testing.T) 
 
 	client, err := NewClient(testGitLabBaseURL, "token", "123", 5, cfg)
 	if err != nil {
-		t.Fatalf("NewClient returned error: %v", err)
+		t.Fatalf(errNewClient, err)
 	}
 	client.git, err = newStubGitLabClient(t, httpstub.RoundTripFunc(func(r *http.Request) (*http.Response, error) {
 		if r.Method != http.MethodPost {
@@ -103,7 +108,7 @@ func TestClientAddMergeRequestDiscussionIncludesPositionAndPrefix(t *testing.T) 
 		return httpstub.JSONResponse(http.StatusCreated, `{}`), nil
 	}))
 	if err != nil {
-		t.Fatalf("create stub gitlab client: %v", err)
+		t.Fatalf(errCreateStubGitLabClient, err)
 	}
 
 	err = client.AddMergeRequestDiscussion(context.Background(), "foo.go", 42, "please fix this")
@@ -121,11 +126,11 @@ func TestClientGetExistingCommentsReturnsOnlyNonSystemPositionedNotes(t *testing
 
 	client, err := NewClient(testGitLabBaseURL, "token", "123", 5, cfg)
 	if err != nil {
-		t.Fatalf("NewClient returned error: %v", err)
+		t.Fatalf(errNewClient, err)
 	}
 	client.git, err = newStubGitLabClient(t, httpstub.RoundTripFunc(func(r *http.Request) (*http.Response, error) {
 		if r.Method != http.MethodGet || r.URL.Path != testGitLabMRPath+"/notes" {
-			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+			t.Fatalf(errUnexpectedRequest, r.Method, r.URL.Path)
 		}
 
 		return httpstub.JSONResponse(http.StatusOK, `[
@@ -135,7 +140,7 @@ func TestClientGetExistingCommentsReturnsOnlyNonSystemPositionedNotes(t *testing
 		]`), nil
 	}))
 	if err != nil {
-		t.Fatalf("create stub gitlab client: %v", err)
+		t.Fatalf(errCreateStubGitLabClient, err)
 	}
 
 	got, err := client.GetExistingComments(context.Background())
@@ -156,7 +161,7 @@ func TestClientDeleteBotCommentsExceptResolvedDeletesOnlyUnresolvedBotNotes(t *t
 	var deleted []string
 	client, err := NewClient(testGitLabBaseURL, "token", "123", 5, cfg)
 	if err != nil {
-		t.Fatalf("NewClient returned error: %v", err)
+		t.Fatalf(errNewClient, err)
 	}
 	client.git, err = gogitlab.NewClient(
 		"token",
@@ -175,14 +180,14 @@ func TestClientDeleteBotCommentsExceptResolvedDeletesOnlyUnresolvedBotNotes(t *t
 					deleted = append(deleted, strings.TrimPrefix(r.URL.Path, testGitLabNotesPathPrefix))
 					return &http.Response{StatusCode: http.StatusNoContent, Body: http.NoBody, Header: make(http.Header)}, nil
 				default:
-					t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+					t.Fatalf(errUnexpectedRequest, r.Method, r.URL.Path)
 					return nil, nil
 				}
 			}),
 		}),
 	)
 	if err != nil {
-		t.Fatalf("create stub gitlab client: %v", err)
+		t.Fatalf(errCreateStubGitLabClient, err)
 	}
 
 	err = client.DeleteBotCommentsExceptResolved(context.Background())
@@ -203,7 +208,7 @@ func TestClientDeleteBotCommentsExceptResolvedReturnsDeleteError(t *testing.T) {
 
 	client, err := NewClient(testGitLabBaseURL, "token", "123", 5, cfg)
 	if err != nil {
-		t.Fatalf("NewClient returned error: %v", err)
+		t.Fatalf(errNewClient, err)
 	}
 	client.git, err = newStubGitLabClient(t, httpstub.RoundTripFunc(func(r *http.Request) (*http.Response, error) {
 		switch {
@@ -214,12 +219,12 @@ func TestClientDeleteBotCommentsExceptResolvedReturnsDeleteError(t *testing.T) {
 		case r.Method == http.MethodDelete && strings.HasPrefix(r.URL.Path, testGitLabNotesPathPrefix):
 			return nil, errors.New("delete failed")
 		default:
-			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+			t.Fatalf(errUnexpectedRequest, r.Method, r.URL.Path)
 			return nil, nil
 		}
 	}))
 	if err != nil {
-		t.Fatalf("create stub gitlab client: %v", err)
+		t.Fatalf(errCreateStubGitLabClient, err)
 	}
 
 	if err := client.DeleteBotCommentsExceptResolved(context.Background()); err == nil {
