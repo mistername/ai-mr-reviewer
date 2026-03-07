@@ -3,6 +3,7 @@ package gitlab
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
 	"testing"
@@ -27,6 +28,52 @@ type discussionRequest struct {
 		OldPath      string `json:"old_path"`
 		NewPath      string `json:"new_path"`
 	} `json:"position"`
+}
+
+func TestNewClientReturnsErrorForInvalidBaseURL(t *testing.T) {
+	t.Parallel()
+
+	cfg := mocks.NewConfigPort(t)
+
+	_, err := NewClient("://bad-url", "token", "123", 5, cfg)
+	if err == nil {
+		t.Fatal("expected error for invalid base URL")
+	}
+}
+
+func TestClientGetMergeRequestChangesReturnsDiffs(t *testing.T) {
+	t.Parallel()
+
+	cfg := mocks.NewConfigPort(t)
+
+	client, err := NewClient(testGitLabBaseURL, "token", "123", 5, cfg)
+	if err != nil {
+		t.Fatalf("NewClient returned error: %v", err)
+	}
+	client.git, err = newStubGitLabClient(t, httpstub.RoundTripFunc(func(r *http.Request) (*http.Response, error) {
+		if r.Method != http.MethodGet || r.URL.Path != testGitLabMRPath+"/diffs" {
+			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
+
+		return httpstub.JSONResponse(http.StatusOK, `[
+			{"old_path":"old.go","new_path":"new.go","diff":"@@ -1 +1 @@"},
+			{"old_path":"same.go","new_path":"same.go","diff":"@@ -2 +2 @@"}
+		]`), nil
+	}))
+	if err != nil {
+		t.Fatalf("create stub gitlab client: %v", err)
+	}
+
+	diffs, err := client.GetMergeRequestChanges(context.Background())
+	if err != nil {
+		t.Fatalf("GetMergeRequestChanges returned error: %v", err)
+	}
+	if len(diffs) != 2 {
+		t.Fatalf("expected 2 diffs, got %d", len(diffs))
+	}
+	if diffs[0].OldPath != "old.go" || diffs[0].NewPath != "new.go" || diffs[0].Content != "@@ -1 +1 @@" {
+		t.Fatalf("unexpected first diff: %+v", diffs[0])
+	}
 }
 
 func TestClientAddMergeRequestDiscussionIncludesPositionAndPrefix(t *testing.T) {
@@ -65,6 +112,39 @@ func TestClientAddMergeRequestDiscussionIncludesPositionAndPrefix(t *testing.T) 
 	}
 
 	assertDiscussionRequest(t, got)
+}
+
+func TestClientGetExistingCommentsReturnsOnlyNonSystemPositionedNotes(t *testing.T) {
+	t.Parallel()
+
+	cfg := mocks.NewConfigPort(t)
+
+	client, err := NewClient(testGitLabBaseURL, "token", "123", 5, cfg)
+	if err != nil {
+		t.Fatalf("NewClient returned error: %v", err)
+	}
+	client.git, err = newStubGitLabClient(t, httpstub.RoundTripFunc(func(r *http.Request) (*http.Response, error) {
+		if r.Method != http.MethodGet || r.URL.Path != testGitLabMRPath+"/notes" {
+			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
+
+		return httpstub.JSONResponse(http.StatusOK, `[
+			{"body":"first","system":false,"position":{"new_path":"foo.go","new_line":42}},
+			{"body":"system","system":true,"position":{"new_path":"foo.go","new_line":42}},
+			{"body":"missing-position","system":false}
+		]`), nil
+	}))
+	if err != nil {
+		t.Fatalf("create stub gitlab client: %v", err)
+	}
+
+	got, err := client.GetExistingComments(context.Background())
+	if err != nil {
+		t.Fatalf("GetExistingComments returned error: %v", err)
+	}
+	if len(got) != 1 || len(got["foo.go:42"]) != 1 || got["foo.go:42"][0] != "first" {
+		t.Fatalf("unexpected comments map: %#v", got)
+	}
 }
 
 func TestClientDeleteBotCommentsExceptResolvedDeletesOnlyUnresolvedBotNotes(t *testing.T) {
@@ -112,6 +192,38 @@ func TestClientDeleteBotCommentsExceptResolvedDeletesOnlyUnresolvedBotNotes(t *t
 
 	if len(deleted) != 1 || deleted[0] != "1" {
 		t.Fatalf("unexpected deleted note ids: %v", deleted)
+	}
+}
+
+func TestClientDeleteBotCommentsExceptResolvedReturnsDeleteError(t *testing.T) {
+	t.Parallel()
+
+	cfg := mocks.NewConfigPort(t)
+	cfg.On("GetCommentPrefix").Return("ai-mr-reviewer").Maybe()
+
+	client, err := NewClient(testGitLabBaseURL, "token", "123", 5, cfg)
+	if err != nil {
+		t.Fatalf("NewClient returned error: %v", err)
+	}
+	client.git, err = newStubGitLabClient(t, httpstub.RoundTripFunc(func(r *http.Request) (*http.Response, error) {
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == testGitLabMRPath+"/notes":
+			return httpstub.JSONResponse(http.StatusOK, `[
+				{"id":1,"body":"ai-mr-reviewer: first","resolved":false,"system":false}
+			]`), nil
+		case r.Method == http.MethodDelete && strings.HasPrefix(r.URL.Path, testGitLabNotesPathPrefix):
+			return nil, errors.New("delete failed")
+		default:
+			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+			return nil, nil
+		}
+	}))
+	if err != nil {
+		t.Fatalf("create stub gitlab client: %v", err)
+	}
+
+	if err := client.DeleteBotCommentsExceptResolved(context.Background()); err == nil {
+		t.Fatal("expected delete error")
 	}
 }
 

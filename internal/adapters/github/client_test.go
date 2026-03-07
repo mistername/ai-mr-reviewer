@@ -3,6 +3,7 @@ package github
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/url"
 	"testing"
@@ -15,30 +16,57 @@ const testGitHubBaseURL = "https://api.github.test/"
 const testGitHubPRPath = "/repos/acme/repo/pulls/7"
 const testGitHubIssuePath = "/repos/acme/repo/issues/7"
 
-func TestClientGetMergeRequestChanges(t *testing.T) {
-	t.Parallel()
+func newTestGitHubAPIClient(t *testing.T, transport httpstub.RoundTripFunc) *gogithub.Client {
+	t.Helper()
 
-	apiClient := gogithub.NewClient(&http.Client{
-		Transport: httpstub.RoundTripFunc(func(r *http.Request) (*http.Response, error) {
-			if r.Method != http.MethodGet {
-				t.Fatalf("unexpected method: %s", r.Method)
-			}
-			if r.URL.Path != testGitHubPRPath+"/files" {
-				t.Fatalf("unexpected path: %s", r.URL.Path)
-			}
-
-			return httpstub.JSONResponse(http.StatusOK, `[
-				{"filename":"new.go","patch":"@@ -1 +1 @@","previous_filename":"old.go"},
-				{"filename":"same.go","patch":"@@ -2 +2 @@"}
-			]`), nil
-		}),
-	})
+	apiClient := gogithub.NewClient(&http.Client{Transport: transport})
 
 	baseURL, err := url.Parse(testGitHubBaseURL)
 	if err != nil {
 		t.Fatalf("parse base url: %v", err)
 	}
 	apiClient.BaseURL = baseURL
+
+	return apiClient
+}
+
+func TestNewClientParsesPullRequestNumber(t *testing.T) {
+	t.Parallel()
+
+	client, err := NewClient("token", "acme", "repo", "7", "abc123", "ai-mr-reviewer")
+	if err != nil {
+		t.Fatalf("NewClient returned error: %v", err)
+	}
+	if client.owner != "acme" || client.repo != "repo" || client.prNumber != 7 {
+		t.Fatalf("unexpected client fields: %+v", client)
+	}
+}
+
+func TestNewClientReturnsErrorForInvalidPullRequestNumber(t *testing.T) {
+	t.Parallel()
+
+	_, err := NewClient("token", "acme", "repo", "not-a-number", "abc123", "ai-mr-reviewer")
+	if err == nil {
+		t.Fatal("expected error for invalid PR number")
+	}
+}
+
+func TestClientGetMergeRequestChanges(t *testing.T) {
+	t.Parallel()
+
+	apiClient := newTestGitHubAPIClient(t, httpstub.RoundTripFunc(func(r *http.Request) (*http.Response, error) {
+		if r.Method != http.MethodGet {
+			t.Fatalf("unexpected method: %s", r.Method)
+		}
+		if r.URL.Path != testGitHubPRPath+"/files" {
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+
+		return httpstub.JSONResponse(http.StatusOK, `[
+				{"filename":"new.go","patch":"@@ -1 +1 @@","previous_filename":"old.go"},
+				{"filename":"same.go","patch":"@@ -2 +2 @@"}
+			]`), nil
+	}))
 
 	client := &Client{
 		client:   apiClient,
@@ -66,32 +94,24 @@ func TestClientAddMergeRequestDiscussionFallsBackToIssueComment(t *testing.T) {
 	t.Parallel()
 
 	var issueCommentBody string
-	apiClient := gogithub.NewClient(&http.Client{
-		Transport: httpstub.RoundTripFunc(func(r *http.Request) (*http.Response, error) {
-			switch {
-			case r.Method == http.MethodPost && r.URL.Path == testGitHubPRPath+"/comments":
-				return httpstub.JSONResponse(http.StatusUnprocessableEntity, `{"message":"validation failed"}`), nil
-			case r.Method == http.MethodPost && r.URL.Path == testGitHubIssuePath+"/comments":
-				var payload struct {
-					Body string `json:"body"`
-				}
-				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-					t.Fatalf("decode issue comment payload: %v", err)
-				}
-				issueCommentBody = payload.Body
-				return httpstub.JSONResponse(http.StatusCreated, `{"id":1}`), nil
-			default:
-				t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
-				return nil, nil
+	apiClient := newTestGitHubAPIClient(t, httpstub.RoundTripFunc(func(r *http.Request) (*http.Response, error) {
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == testGitHubPRPath+"/comments":
+			return httpstub.JSONResponse(http.StatusUnprocessableEntity, `{"message":"validation failed"}`), nil
+		case r.Method == http.MethodPost && r.URL.Path == testGitHubIssuePath+"/comments":
+			var payload struct {
+				Body string `json:"body"`
 			}
-		}),
-	})
-
-	baseURL, err := url.Parse(testGitHubBaseURL)
-	if err != nil {
-		t.Fatalf("parse base url: %v", err)
-	}
-	apiClient.BaseURL = baseURL
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				t.Fatalf("decode issue comment payload: %v", err)
+			}
+			issueCommentBody = payload.Body
+			return httpstub.JSONResponse(http.StatusCreated, `{"id":1}`), nil
+		default:
+			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+			return nil, nil
+		}
+	}))
 
 	client := &Client{
 		client:        apiClient,
@@ -102,7 +122,7 @@ func TestClientAddMergeRequestDiscussionFallsBackToIssueComment(t *testing.T) {
 		prNumber:      7,
 	}
 
-	err = client.AddMergeRequestDiscussion(context.Background(), "foo.go", 12, "please fix this")
+	err := client.AddMergeRequestDiscussion(context.Background(), "foo.go", 12, "please fix this")
 	if err != nil {
 		t.Fatalf("AddMergeRequestDiscussion returned error: %v", err)
 	}
@@ -110,5 +130,115 @@ func TestClientAddMergeRequestDiscussionFallsBackToIssueComment(t *testing.T) {
 	want := "ai-mr-reviewer: **File: foo.go**\n\nplease fix this"
 	if issueCommentBody != want {
 		t.Fatalf("unexpected fallback issue comment body: %q", issueCommentBody)
+	}
+}
+
+func TestClientGetExistingCommentsReturnsReviewCommentsWithPathAndLine(t *testing.T) {
+	t.Parallel()
+
+	apiClient := newTestGitHubAPIClient(t, httpstub.RoundTripFunc(func(r *http.Request) (*http.Response, error) {
+		if r.Method != http.MethodGet || r.URL.Path != testGitHubPRPath+"/comments" {
+			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
+
+		return httpstub.JSONResponse(http.StatusOK, `[
+			{"path":"foo.go","line":12,"body":"first"},
+			{"path":"foo.go","line":12,"body":"second"},
+			{"path":"bar.go","body":"ignored-without-line"},
+			{"line":5,"body":"ignored-without-path"}
+		]`), nil
+	}))
+
+	client := &Client{client: apiClient, owner: "acme", repo: "repo", prNumber: 7}
+
+	got, err := client.GetExistingComments(context.Background())
+	if err != nil {
+		t.Fatalf("GetExistingComments returned error: %v", err)
+	}
+
+	want := []string{"first", "second"}
+	if len(got) != 1 || len(got["foo.go:12"]) != len(want) {
+		t.Fatalf("unexpected comments map: %#v", got)
+	}
+	for i, body := range want {
+		if got["foo.go:12"][i] != body {
+			t.Fatalf("unexpected comment bodies: %#v", got["foo.go:12"])
+		}
+	}
+}
+
+func TestClientDeleteBotCommentsExceptResolvedDeletesBotReviewAndIssueComments(t *testing.T) {
+	t.Parallel()
+
+	var deletedPaths []string
+	apiClient := newTestGitHubAPIClient(t, httpstub.RoundTripFunc(func(r *http.Request) (*http.Response, error) {
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == testGitHubPRPath+"/comments":
+			return httpstub.JSONResponse(http.StatusOK, `[
+				{"id":11,"body":"ai-mr-reviewer: review comment"},
+				{"id":12,"body":"human review comment"},
+				{"body":"missing id"}
+			]`), nil
+		case r.Method == http.MethodGet && r.URL.Path == testGitHubIssuePath+"/comments":
+			return httpstub.JSONResponse(http.StatusOK, `[
+				{"id":21,"body":"ai-mr-reviewer: issue comment"},
+				{"id":22,"body":"human issue comment"},
+				{"id":23}
+			]`), nil
+		case r.Method == http.MethodDelete:
+			deletedPaths = append(deletedPaths, r.URL.Path)
+			return &http.Response{StatusCode: http.StatusNoContent, Body: http.NoBody, Header: make(http.Header)}, nil
+		default:
+			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+			return nil, nil
+		}
+	}))
+
+	client := &Client{
+		client:        apiClient,
+		commentPrefix: "ai-mr-reviewer",
+		owner:         "acme",
+		repo:          "repo",
+		prNumber:      7,
+	}
+
+	if err := client.DeleteBotCommentsExceptResolved(context.Background()); err != nil {
+		t.Fatalf("DeleteBotCommentsExceptResolved returned error: %v", err)
+	}
+
+	if len(deletedPaths) != 2 {
+		t.Fatalf("expected 2 deletions, got %v", deletedPaths)
+	}
+	if deletedPaths[0] != "/repos/acme/repo/pulls/comments/11" || deletedPaths[1] != "/repos/acme/repo/issues/comments/21" {
+		t.Fatalf("unexpected deletions: %v", deletedPaths)
+	}
+}
+
+func TestClientAddMergeRequestDiscussionReturnsErrorWhenFallbackFails(t *testing.T) {
+	t.Parallel()
+
+	apiClient := newTestGitHubAPIClient(t, httpstub.RoundTripFunc(func(r *http.Request) (*http.Response, error) {
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == testGitHubPRPath+"/comments":
+			return nil, errors.New("review endpoint down")
+		case r.Method == http.MethodPost && r.URL.Path == testGitHubIssuePath+"/comments":
+			return nil, errors.New("issue endpoint down")
+		default:
+			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+			return nil, nil
+		}
+	}))
+
+	client := &Client{
+		client:        apiClient,
+		commentPrefix: "ai-mr-reviewer",
+		owner:         "acme",
+		repo:          "repo",
+		commitSHA:     "abc123",
+		prNumber:      7,
+	}
+
+	if err := client.AddMergeRequestDiscussion(context.Background(), "foo.go", 12, "please fix this"); err == nil {
+		t.Fatal("expected fallback failure error")
 	}
 }
