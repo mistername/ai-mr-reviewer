@@ -12,6 +12,10 @@ import (
 	gogithub "github.com/google/go-github/v82/github"
 )
 
+const testGitHubBaseURL = "https://api.github.test/"
+const testGitHubPRPath = "/repos/acme/repo/pulls/7"
+const testGitHubIssuePath = "/repos/acme/repo/issues/7"
+
 type roundTripFunc func(*http.Request) (*http.Response, error)
 
 func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) {
@@ -34,7 +38,7 @@ func TestClientGetMergeRequestChanges(t *testing.T) {
 			if r.Method != http.MethodGet {
 				t.Fatalf("unexpected method: %s", r.Method)
 			}
-			if r.URL.Path != "/repos/acme/repo/pulls/7/files" {
+			if r.URL.Path != testGitHubPRPath+"/files" {
 				t.Fatalf("unexpected path: %s", r.URL.Path)
 			}
 
@@ -45,7 +49,7 @@ func TestClientGetMergeRequestChanges(t *testing.T) {
 		}),
 	})
 
-	baseURL, err := url.Parse("https://api.github.test/")
+	baseURL, err := url.Parse(testGitHubBaseURL)
 	if err != nil {
 		t.Fatalf("parse base url: %v", err)
 	}
@@ -80,9 +84,9 @@ func TestClientAddMergeRequestDiscussionFallsBackToIssueComment(t *testing.T) {
 	apiClient := gogithub.NewClient(&http.Client{
 		Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
 			switch {
-			case r.Method == http.MethodPost && r.URL.Path == "/repos/acme/repo/pulls/7/comments":
+			case r.Method == http.MethodPost && r.URL.Path == testGitHubPRPath+"/comments":
 				return jsonResponse(http.StatusUnprocessableEntity, `{"message":"validation failed"}`), nil
-			case r.Method == http.MethodPost && r.URL.Path == "/repos/acme/repo/issues/7/comments":
+			case r.Method == http.MethodPost && r.URL.Path == testGitHubIssuePath+"/comments":
 				var payload struct {
 					Body string `json:"body"`
 				}
@@ -98,7 +102,7 @@ func TestClientAddMergeRequestDiscussionFallsBackToIssueComment(t *testing.T) {
 		}),
 	})
 
-	baseURL, err := url.Parse("https://api.github.test/")
+	baseURL, err := url.Parse(testGitHubBaseURL)
 	if err != nil {
 		t.Fatalf("parse base url: %v", err)
 	}

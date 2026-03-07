@@ -13,6 +13,10 @@ import (
 	gogitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
+const testGitLabBaseURL = "https://gitlab.example.com/api/v4"
+const testGitLabMRPath = "/api/v4/projects/123/merge_requests/5"
+const testGitLabNotesPathPrefix = testGitLabMRPath + "/notes/"
+
 func TestClientAddMergeRequestDiscussionIncludesPositionAndPrefix(t *testing.T) {
 	t.Parallel()
 
@@ -34,19 +38,19 @@ func TestClientAddMergeRequestDiscussionIncludesPositionAndPrefix(t *testing.T) 
 		} `json:"position"`
 	}
 
-	client, err := NewClient("https://gitlab.example.com/api/v4", "token", "123", 5, cfg)
+	client, err := NewClient(testGitLabBaseURL, "token", "123", 5, cfg)
 	if err != nil {
 		t.Fatalf("NewClient returned error: %v", err)
 	}
 	client.git, err = gogitlab.NewClient(
 		"token",
-		gogitlab.WithBaseURL("https://gitlab.example.com/api/v4"),
+		gogitlab.WithBaseURL(testGitLabBaseURL),
 		gogitlab.WithHTTPClient(&http.Client{
 			Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
 				if r.Method != http.MethodPost {
 					t.Fatalf("unexpected method: %s", r.Method)
 				}
-				if r.URL.Path != "/api/v4/projects/123/merge_requests/5/discussions" {
+				if r.URL.Path != testGitLabMRPath+"/discussions" {
 					t.Fatalf("unexpected path: %s", r.URL.Path)
 				}
 				if err := json.NewDecoder(r.Body).Decode(&got); err != nil {
@@ -89,25 +93,25 @@ func TestClientDeleteBotCommentsExceptResolvedDeletesOnlyUnresolvedBotNotes(t *t
 	cfg.On("GetCommentPrefix").Return("ai-mr-reviewer").Maybe()
 
 	var deleted []string
-	client, err := NewClient("https://gitlab.example.com/api/v4", "token", "123", 5, cfg)
+	client, err := NewClient(testGitLabBaseURL, "token", "123", 5, cfg)
 	if err != nil {
 		t.Fatalf("NewClient returned error: %v", err)
 	}
 	client.git, err = gogitlab.NewClient(
 		"token",
-		gogitlab.WithBaseURL("https://gitlab.example.com/api/v4"),
+		gogitlab.WithBaseURL(testGitLabBaseURL),
 		gogitlab.WithHTTPClient(&http.Client{
 			Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
 				switch {
-				case r.Method == http.MethodGet && r.URL.Path == "/api/v4/projects/123/merge_requests/5/notes":
+				case r.Method == http.MethodGet && r.URL.Path == testGitLabMRPath+"/notes":
 					return jsonResponse(http.StatusOK, `[
 						{"id":1,"body":"ai-mr-reviewer: first","resolved":false,"system":false},
 						{"id":2,"body":"ai-mr-reviewer: resolved","resolved":true,"system":false},
 						{"id":3,"body":"system note","resolved":false,"system":true},
 						{"id":4,"body":"human note","resolved":false,"system":false}
 					]`), nil
-				case r.Method == http.MethodDelete && strings.HasPrefix(r.URL.Path, "/api/v4/projects/123/merge_requests/5/notes/"):
-					deleted = append(deleted, strings.TrimPrefix(r.URL.Path, "/api/v4/projects/123/merge_requests/5/notes/"))
+				case r.Method == http.MethodDelete && strings.HasPrefix(r.URL.Path, testGitLabNotesPathPrefix):
+					deleted = append(deleted, strings.TrimPrefix(r.URL.Path, testGitLabNotesPathPrefix))
 					return &http.Response{
 						StatusCode: http.StatusNoContent,
 						Body:       io.NopCloser(bytes.NewBuffer(nil)),
