@@ -16,7 +16,8 @@ import (
 
 const testGitLabBaseURL = "https://gitlab.example.com/api/v4"
 const testGitLabMRPath = "/api/v4/projects/123/merge_requests/5"
-const testGitLabNotesPathPrefix = testGitLabMRPath + "/notes/"
+const testGitLabNotesPath = "/notes"
+const testGitLabNotesPathPrefix = testGitLabMRPath + testGitLabNotesPath + "/"
 const errNewClient = "NewClient returned error: %v"
 const errUnexpectedRequest = "unexpected request: %s %s"
 const errCreateStubGitLabClient = "create stub gitlab client: %v"
@@ -129,7 +130,7 @@ func TestClientGetExistingCommentsReturnsOnlyNonSystemPositionedNotes(t *testing
 		t.Fatalf(errNewClient, err)
 	}
 	client.git, err = newStubGitLabClient(t, httpstub.RoundTripFunc(func(r *http.Request) (*http.Response, error) {
-		if r.Method != http.MethodGet || r.URL.Path != testGitLabMRPath+"/notes" {
+		if r.Method != http.MethodGet || r.URL.Path != testGitLabMRPath+testGitLabNotesPath {
 			t.Fatalf(errUnexpectedRequest, r.Method, r.URL.Path)
 		}
 
@@ -169,7 +170,7 @@ func TestClientDeleteBotCommentsExceptResolvedDeletesOnlyUnresolvedBotNotes(t *t
 		gogitlab.WithHTTPClient(&http.Client{
 			Transport: httpstub.RoundTripFunc(func(r *http.Request) (*http.Response, error) {
 				switch {
-				case r.Method == http.MethodGet && r.URL.Path == testGitLabMRPath+"/notes":
+				case r.Method == http.MethodGet && r.URL.Path == testGitLabMRPath+testGitLabNotesPath:
 					return httpstub.JSONResponse(http.StatusOK, `[
 							{"id":1,"body":"ai-mr-reviewer: first","resolved":false,"system":false},
 							{"id":2,"body":"ai-mr-reviewer: resolved","resolved":true,"system":false},
@@ -212,7 +213,7 @@ func TestClientDeleteBotCommentsExceptResolvedReturnsDeleteError(t *testing.T) {
 	}
 	client.git, err = newStubGitLabClient(t, httpstub.RoundTripFunc(func(r *http.Request) (*http.Response, error) {
 		switch {
-		case r.Method == http.MethodGet && r.URL.Path == testGitLabMRPath+"/notes":
+		case r.Method == http.MethodGet && r.URL.Path == testGitLabMRPath+testGitLabNotesPath:
 			return httpstub.JSONResponse(http.StatusOK, `[
 				{"id":1,"body":"ai-mr-reviewer: first","resolved":false,"system":false}
 			]`), nil

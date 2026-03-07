@@ -11,7 +11,8 @@ import (
 )
 
 type configMock struct {
-	iid string
+	iid               string
+	deleteBotComments bool
 }
 
 func (configMock) GetVCSProvider() string             { return "gitlab" }
@@ -35,7 +36,7 @@ func (configMock) GetOpenAIModel() string             { return "gpt-4" }
 func (configMock) GetAnthropicAuthToken() string      { return "" }
 func (configMock) GetAnthropicBaseURL() string        { return "https://api.anthropic.com/v1/" }
 func (configMock) GetAnthropicModel() string          { return "claude-sonnet-4-20250514" }
-func (configMock) GetDeleteBotComments() bool         { return false }
+func (c configMock) GetDeleteBotComments() bool       { return c.deleteBotComments }
 func (configMock) GetCommentPrefix() string           { return "ai-mr-reviewer" }
 func (configMock) GetMiniMaxAPIKey() string           { return "" }
 func (configMock) GetMiniMaxBaseURL() string          { return "https://api.minimax.chat/v1" }
@@ -52,6 +53,9 @@ type mrProviderMock struct {
 	diffs            []domain.Diff
 	diffsErr         error
 	addedDiscussions []addedDiscussion
+	deleteErr        error
+	deleteCalls      int
+	addErr           error
 }
 
 type addedDiscussion struct {
@@ -68,9 +72,12 @@ func (m *mrProviderMock) GetExistingComments(context.Context) (map[string][]stri
 }
 func (m *mrProviderMock) AddMergeRequestDiscussion(_ context.Context, file string, line int, note string) error {
 	m.addedDiscussions = append(m.addedDiscussions, addedDiscussion{file: file, line: line, body: note})
-	return nil
+	return m.addErr
 }
-func (m *mrProviderMock) DeleteBotCommentsExceptResolved(context.Context) error { return nil }
+func (m *mrProviderMock) DeleteBotCommentsExceptResolved(context.Context) error {
+	m.deleteCalls++
+	return m.deleteErr
+}
 
 var _ domain.MRProviderPort = (*mrProviderMock)(nil)
 
@@ -94,6 +101,26 @@ func TestParseReviewResponse(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if len(issues) != 1 || issues[0].Line != 3 || issues[0].FilePath != "a.go" {
+		t.Fatalf("unexpected issues: %+v", issues)
+	}
+}
+
+func TestParseReviewResponseUsesPathFallback(t *testing.T) {
+	issues, err := parseReviewResponse(`{"issues":[{"path":"a.go","line":4,"severity":"warning","message":"x"}]}`)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(issues) != 1 || issues[0].FilePath != "a.go" || issues[0].Line != 4 {
+		t.Fatalf("unexpected issues: %+v", issues)
+	}
+}
+
+func TestParseReviewResponseExtractsJSONFromCodeFence(t *testing.T) {
+	issues, err := parseReviewResponse("```json\n{\"issues\":[{\"file\":\"a.go\",\"line\":3,\"severity\":\"warning\",\"message\":\"x\"}]}\n```")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(issues) != 1 || issues[0].FilePath != "a.go" {
 		t.Fatalf("unexpected issues: %+v", issues)
 	}
 }
@@ -147,6 +174,91 @@ func TestRunReviewsNewDiffsNoFilter(t *testing.T) {
 	}
 	if len(g.addedDiscussions) != 1 {
 		t.Fatalf("expected 1 discussion, got %d", len(g.addedDiscussions))
+	}
+}
+
+func TestRunContinuesWhenExistingCommentsFail(t *testing.T) {
+	c := &configMock{iid: "5"}
+	g := &mrProviderMock{
+		commentsErr: context.DeadlineExceeded,
+		diffs: []domain.Diff{
+			{NewPath: "new.go", Content: "diff2"},
+		},
+	}
+	o := &ollamaMock{response: `{"issues":[{"file":"new.go","line":10,"severity":"warning","message":"fix it"}]}`}
+	r := NewReviewer(c, g, o, zap.NewNop())
+
+	if err := r.Run(context.Background()); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(g.addedDiscussions) != 1 {
+		t.Fatalf("expected 1 discussion, got %d", len(g.addedDiscussions))
+	}
+}
+
+func TestRunDeletesBotCommentsWhenEnabled(t *testing.T) {
+	c := &configMock{iid: "5", deleteBotComments: true}
+	g := &mrProviderMock{
+		diffs: []domain.Diff{
+			{NewPath: "new.go", Content: "diff2"},
+		},
+	}
+	o := &ollamaMock{response: `{"issues":[]}`}
+	r := NewReviewer(c, g, o, zap.NewNop())
+
+	if err := r.Run(context.Background()); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if g.deleteCalls != 1 {
+		t.Fatalf("expected delete call, got %d", g.deleteCalls)
+	}
+}
+
+func TestRunUsesOnlyKnownDiffPathWhenIssueFileIsEmpty(t *testing.T) {
+	c := &configMock{iid: "5"}
+	g := &mrProviderMock{
+		diffs: []domain.Diff{
+			{NewPath: "new.go", Content: "diff2"},
+		},
+	}
+	o := &ollamaMock{response: `{"issues":[{"line":10,"severity":"warning","message":"fix it"}]}`}
+	r := NewReviewer(c, g, o, zap.NewNop())
+
+	if err := r.Run(context.Background()); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(g.addedDiscussions) != 1 || g.addedDiscussions[0].file != "new.go" {
+		t.Fatalf("unexpected discussions: %+v", g.addedDiscussions)
+	}
+}
+
+func TestRunSkipsUnknownFilesFromAIResponse(t *testing.T) {
+	c := &configMock{iid: "5"}
+	g := &mrProviderMock{
+		diffs: []domain.Diff{
+			{NewPath: "new.go", Content: "diff2"},
+		},
+	}
+	o := &ollamaMock{response: `{"issues":[{"file":"other.go","line":10,"severity":"warning","message":"fix it"}]}`}
+	r := NewReviewer(c, g, o, zap.NewNop())
+
+	if err := r.Run(context.Background()); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(g.addedDiscussions) != 0 {
+		t.Fatalf("expected no discussions, got %+v", g.addedDiscussions)
+	}
+}
+
+func TestBuildCombinedDiffSortsPathsAndDetectsLanguages(t *testing.T) {
+	got := buildCombinedDiff([]domain.Diff{
+		{NewPath: "b.unknown", Content: "diff-b"},
+		{NewPath: "a.go", Content: "diff-a"},
+	})
+
+	want := "File: a.go\nLanguage: Go\nDiff:\ndiff-a\n\nFile: b.unknown\nLanguage: Unknown\nDiff:\ndiff-b"
+	if got != want {
+		t.Fatalf("unexpected combined diff:\n%s", got)
 	}
 }
 
