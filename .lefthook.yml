@@ -8,6 +8,10 @@ pre-commit:
       tags: run linter
       run: golangci-lint run
       glob: "*.go"
+    fix:
+      tags: go fix
+      run: go fix ./...
+      glob: "*.go"
 pre-push:
   parallel: true
   commands:

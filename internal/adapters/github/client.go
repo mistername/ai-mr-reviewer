@@ -87,14 +87,14 @@ func (c *Client) AddMergeRequestDiscussion(ctx context.Context, file string, lin
 	prComment := &github.PullRequestComment{
 		Body:     &note,
 		Path:     &file,
-		Line:     github.Ptr(line),
+		Line:     new(line),
 		CommitID: &c.commitSHA,
-		Side:     github.Ptr("RIGHT"),
+		Side:     new("RIGHT"),
 	}
 
 	_, _, err := c.client.PullRequests.CreateComment(ctx, c.owner, c.repo, c.prNumber, prComment)
 	if err != nil {
-		body := fmt.Sprintf("%s:**File: %s**\n\n%s", c.commentPrefix, file, note)
+		body := fmt.Sprintf("%s: **File: %s**\n\n%s", c.commentPrefix, file, note)
 		issueComment := &github.IssueComment{
 			Body: &body,
 		}

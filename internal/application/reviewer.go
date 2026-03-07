@@ -237,10 +237,10 @@ func extractJSON(s string) string {
 		}
 	}
 
-	if idx := strings.Index(s, "```"); idx != -1 {
-		content := s[idx+3:]
-		if end := strings.Index(content, "```"); end != -1 {
-			extracted := strings.TrimSpace(content[:end])
+	if _, after, ok := strings.Cut(s, "```"); ok {
+		content := after
+		if before, _, ok := strings.Cut(content, "```"); ok {
+			extracted := strings.TrimSpace(before)
 			if isJSON(extracted) {
 				return extracted
 			}
