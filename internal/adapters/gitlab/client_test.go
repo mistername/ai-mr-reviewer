@@ -1,15 +1,14 @@
 package gitlab
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
-	"io"
 	"net/http"
 	"strings"
 	"testing"
 
 	"github.com/adlandh/ai-mr-reviewer/internal/domain/mocks"
+	"github.com/adlandh/ai-mr-reviewer/internal/testutil/httpstub"
 	gogitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
@@ -44,7 +43,7 @@ func TestClientAddMergeRequestDiscussionIncludesPositionAndPrefix(t *testing.T) 
 	if err != nil {
 		t.Fatalf("NewClient returned error: %v", err)
 	}
-	client.git, err = newStubGitLabClient(t, roundTripFunc(func(r *http.Request) (*http.Response, error) {
+	client.git, err = newStubGitLabClient(t, httpstub.RoundTripFunc(func(r *http.Request) (*http.Response, error) {
 		if r.Method != http.MethodPost {
 			t.Fatalf("unexpected method: %s", r.Method)
 		}
@@ -54,7 +53,7 @@ func TestClientAddMergeRequestDiscussionIncludesPositionAndPrefix(t *testing.T) 
 		if err := json.NewDecoder(r.Body).Decode(&got); err != nil {
 			t.Fatalf("decode request body: %v", err)
 		}
-		return jsonResponse(http.StatusCreated, `{}`), nil
+		return httpstub.JSONResponse(http.StatusCreated, `{}`), nil
 	}))
 	if err != nil {
 		t.Fatalf("create stub gitlab client: %v", err)
@@ -83,22 +82,18 @@ func TestClientDeleteBotCommentsExceptResolvedDeletesOnlyUnresolvedBotNotes(t *t
 		"token",
 		gogitlab.WithBaseURL(testGitLabBaseURL),
 		gogitlab.WithHTTPClient(&http.Client{
-			Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+			Transport: httpstub.RoundTripFunc(func(r *http.Request) (*http.Response, error) {
 				switch {
 				case r.Method == http.MethodGet && r.URL.Path == testGitLabMRPath+"/notes":
-					return jsonResponse(http.StatusOK, `[
-						{"id":1,"body":"ai-mr-reviewer: first","resolved":false,"system":false},
-						{"id":2,"body":"ai-mr-reviewer: resolved","resolved":true,"system":false},
-						{"id":3,"body":"system note","resolved":false,"system":true},
-						{"id":4,"body":"human note","resolved":false,"system":false}
-					]`), nil
+					return httpstub.JSONResponse(http.StatusOK, `[
+							{"id":1,"body":"ai-mr-reviewer: first","resolved":false,"system":false},
+							{"id":2,"body":"ai-mr-reviewer: resolved","resolved":true,"system":false},
+							{"id":3,"body":"system note","resolved":false,"system":true},
+							{"id":4,"body":"human note","resolved":false,"system":false}
+						]`), nil
 				case r.Method == http.MethodDelete && strings.HasPrefix(r.URL.Path, testGitLabNotesPathPrefix):
 					deleted = append(deleted, strings.TrimPrefix(r.URL.Path, testGitLabNotesPathPrefix))
-					return &http.Response{
-						StatusCode: http.StatusNoContent,
-						Body:       io.NopCloser(bytes.NewBuffer(nil)),
-						Header:     make(http.Header),
-					}, nil
+					return &http.Response{StatusCode: http.StatusNoContent, Body: http.NoBody, Header: make(http.Header)}, nil
 				default:
 					t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
 					return nil, nil
@@ -120,7 +115,7 @@ func TestClientDeleteBotCommentsExceptResolvedDeletesOnlyUnresolvedBotNotes(t *t
 	}
 }
 
-func newStubGitLabClient(t *testing.T, transport roundTripFunc) (*gogitlab.Client, error) {
+func newStubGitLabClient(t *testing.T, transport httpstub.RoundTripFunc) (*gogitlab.Client, error) {
 	t.Helper()
 
 	return gogitlab.NewClient(
@@ -149,19 +144,5 @@ func assertDiscussionRequest(t *testing.T, got discussionRequest) {
 	}
 	if got.Position.OldPath != "foo.go" || got.Position.NewPath != "foo.go" {
 		t.Fatalf("unexpected paths: %+v", got.Position)
-	}
-}
-
-type roundTripFunc func(*http.Request) (*http.Response, error)
-
-func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) {
-	return f(r)
-}
-
-func jsonResponse(status int, body string) *http.Response {
-	return &http.Response{
-		StatusCode: status,
-		Header:     http.Header{"Content-Type": []string{"application/json"}},
-		Body:       io.NopCloser(bytes.NewBufferString(body)),
 	}
 }

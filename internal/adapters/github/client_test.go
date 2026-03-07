@@ -1,14 +1,13 @@
 package github
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
-	"io"
 	"net/http"
 	"net/url"
 	"testing"
 
+	"github.com/adlandh/ai-mr-reviewer/internal/testutil/httpstub"
 	gogithub "github.com/google/go-github/v82/github"
 )
 
@@ -16,25 +15,11 @@ const testGitHubBaseURL = "https://api.github.test/"
 const testGitHubPRPath = "/repos/acme/repo/pulls/7"
 const testGitHubIssuePath = "/repos/acme/repo/issues/7"
 
-type roundTripFunc func(*http.Request) (*http.Response, error)
-
-func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) {
-	return f(r)
-}
-
-func jsonResponse(status int, body string) *http.Response {
-	return &http.Response{
-		StatusCode: status,
-		Header:     http.Header{"Content-Type": []string{"application/json"}},
-		Body:       io.NopCloser(bytes.NewBufferString(body)),
-	}
-}
-
 func TestClientGetMergeRequestChanges(t *testing.T) {
 	t.Parallel()
 
 	apiClient := gogithub.NewClient(&http.Client{
-		Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		Transport: httpstub.RoundTripFunc(func(r *http.Request) (*http.Response, error) {
 			if r.Method != http.MethodGet {
 				t.Fatalf("unexpected method: %s", r.Method)
 			}
@@ -42,10 +27,10 @@ func TestClientGetMergeRequestChanges(t *testing.T) {
 				t.Fatalf("unexpected path: %s", r.URL.Path)
 			}
 
-			return jsonResponse(http.StatusOK, `[
-			{"filename":"new.go","patch":"@@ -1 +1 @@","previous_filename":"old.go"},
-			{"filename":"same.go","patch":"@@ -2 +2 @@"}
-		]`), nil
+			return httpstub.JSONResponse(http.StatusOK, `[
+				{"filename":"new.go","patch":"@@ -1 +1 @@","previous_filename":"old.go"},
+				{"filename":"same.go","patch":"@@ -2 +2 @@"}
+			]`), nil
 		}),
 	})
 
@@ -82,10 +67,10 @@ func TestClientAddMergeRequestDiscussionFallsBackToIssueComment(t *testing.T) {
 
 	var issueCommentBody string
 	apiClient := gogithub.NewClient(&http.Client{
-		Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		Transport: httpstub.RoundTripFunc(func(r *http.Request) (*http.Response, error) {
 			switch {
 			case r.Method == http.MethodPost && r.URL.Path == testGitHubPRPath+"/comments":
-				return jsonResponse(http.StatusUnprocessableEntity, `{"message":"validation failed"}`), nil
+				return httpstub.JSONResponse(http.StatusUnprocessableEntity, `{"message":"validation failed"}`), nil
 			case r.Method == http.MethodPost && r.URL.Path == testGitHubIssuePath+"/comments":
 				var payload struct {
 					Body string `json:"body"`
@@ -94,7 +79,7 @@ func TestClientAddMergeRequestDiscussionFallsBackToIssueComment(t *testing.T) {
 					t.Fatalf("decode issue comment payload: %v", err)
 				}
 				issueCommentBody = payload.Body
-				return jsonResponse(http.StatusCreated, `{"id":1}`), nil
+				return httpstub.JSONResponse(http.StatusCreated, `{"id":1}`), nil
 			default:
 				t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
 				return nil, nil
