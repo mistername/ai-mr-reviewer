@@ -18,6 +18,13 @@ type addedDiscussion struct {
 	body string
 }
 
+type reviewerHarness struct {
+	config *mocks.ConfigPort
+	mr     *mocks.MRProviderPort
+	ai     *mocks.AIProviderPort
+	logger *zap.Logger
+}
+
 const (
 	warningComment           = "ai-mr-reviewer:**WARNING**: fix it"
 	expectedOneDiscussionFmt = "expected 1 discussion, got %d"
@@ -63,26 +70,24 @@ func TestDetectLanguage(t *testing.T) {
 }
 
 func TestRunReviewsOnlyNewDiffs(t *testing.T) {
-	c := newConfigMock(t, false)
-	g := mocks.NewMRProviderPort(t)
-	o := mocks.NewAIProviderPort(t)
+	h := newReviewerHarness(t, false)
 	added := make([]addedDiscussion, 0, 1)
 
-	g.EXPECT().GetExistingComments(mock.Anything).Return(map[string][]string{
+	h.mr.EXPECT().GetExistingComments(mock.Anything).Return(map[string][]string{
 		"already.go:1": {warningComment},
 	}, nil)
-	g.EXPECT().GetMergeRequestChanges(mock.Anything).Return([]domain.Diff{
+	h.mr.EXPECT().GetMergeRequestChanges(mock.Anything).Return([]domain.Diff{
 		{NewPath: "already.go", Content: "diff1"},
 		{NewPath: "new.go", Content: "diff2"},
 	}, nil)
-	o.EXPECT().ReviewCode(mock.Anything, mock.Anything).Return(`{"issues":[{"file":"new.go","line":10,"severity":"warning","message":"fix it"}]}`, nil)
-	g.EXPECT().AddMergeRequestDiscussion(mock.Anything, "new.go", 10, warningComment).
+	h.ai.EXPECT().ReviewCode(mock.Anything, mock.Anything).Return(issueResponse(`{"file":"new.go","line":10,"severity":"warning","message":"fix it"}`), nil)
+	h.mr.EXPECT().AddMergeRequestDiscussion(mock.Anything, "new.go", 10, warningComment).
 		Run(func(_ context.Context, file string, line int, body string) {
 			added = append(added, addedDiscussion{file: file, line: line, body: body})
 		}).
 		Return(nil)
 
-	r := NewReviewer(c, g, o, zap.NewNop())
+	r := NewReviewer(h.config, h.mr, h.ai, h.logger)
 
 	if err := r.Run(context.Background()); err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -96,19 +101,15 @@ func TestRunReviewsOnlyNewDiffs(t *testing.T) {
 }
 
 func TestRunReviewsNewDiffsNoFilter(t *testing.T) {
-	c := newConfigMock(t, false)
-	g := mocks.NewMRProviderPort(t)
-	o := mocks.NewAIProviderPort(t)
+	h := newReviewerHarness(t, false)
 	callCount := 0
 
-	g.EXPECT().GetExistingComments(mock.Anything).Return(map[string][]string{}, nil)
-	g.EXPECT().GetMergeRequestChanges(mock.Anything).Return([]domain.Diff{{NewPath: "new.go", Content: "diff2"}}, nil)
-	o.EXPECT().ReviewCode(mock.Anything, mock.Anything).Return(`{"issues":[{"file":"new.go","line":10,"severity":"warning","message":"fix it"}]}`, nil)
-	g.EXPECT().AddMergeRequestDiscussion(mock.Anything, "new.go", 10, warningComment).
+	expectSingleDiffReview(h, nil, nil, `{"file":"new.go","line":10,"severity":"warning","message":"fix it"}`)
+	h.mr.EXPECT().AddMergeRequestDiscussion(mock.Anything, "new.go", 10, warningComment).
 		Run(func(context.Context, string, int, string) { callCount++ }).
 		Return(nil)
 
-	r := NewReviewer(c, g, o, zap.NewNop())
+	r := NewReviewer(h.config, h.mr, h.ai, h.logger)
 
 	if err := r.Run(context.Background()); err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -119,19 +120,15 @@ func TestRunReviewsNewDiffsNoFilter(t *testing.T) {
 }
 
 func TestRunContinuesWhenExistingCommentsFail(t *testing.T) {
-	c := newConfigMock(t, false)
-	g := mocks.NewMRProviderPort(t)
-	o := mocks.NewAIProviderPort(t)
+	h := newReviewerHarness(t, false)
 	callCount := 0
 
-	g.EXPECT().GetExistingComments(mock.Anything).Return(nil, context.DeadlineExceeded)
-	g.EXPECT().GetMergeRequestChanges(mock.Anything).Return([]domain.Diff{{NewPath: "new.go", Content: "diff2"}}, nil)
-	o.EXPECT().ReviewCode(mock.Anything, mock.Anything).Return(`{"issues":[{"file":"new.go","line":10,"severity":"warning","message":"fix it"}]}`, nil)
-	g.EXPECT().AddMergeRequestDiscussion(mock.Anything, "new.go", 10, warningComment).
+	expectSingleDiffReview(h, nil, context.DeadlineExceeded, `{"file":"new.go","line":10,"severity":"warning","message":"fix it"}`)
+	h.mr.EXPECT().AddMergeRequestDiscussion(mock.Anything, "new.go", 10, warningComment).
 		Run(func(context.Context, string, int, string) { callCount++ }).
 		Return(nil)
 
-	r := NewReviewer(c, g, o, zap.NewNop())
+	r := NewReviewer(h.config, h.mr, h.ai, h.logger)
 
 	if err := r.Run(context.Background()); err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -142,19 +139,15 @@ func TestRunContinuesWhenExistingCommentsFail(t *testing.T) {
 }
 
 func TestRunDeletesBotCommentsWhenEnabled(t *testing.T) {
-	c := newConfigMock(t, true)
-	g := mocks.NewMRProviderPort(t)
-	o := mocks.NewAIProviderPort(t)
+	h := newReviewerHarness(t, true)
 	deleteCalls := 0
 
-	g.EXPECT().DeleteBotCommentsExceptResolved(mock.Anything).
+	h.mr.EXPECT().DeleteBotCommentsExceptResolved(mock.Anything).
 		Run(func(context.Context) { deleteCalls++ }).
 		Return(nil)
-	g.EXPECT().GetExistingComments(mock.Anything).Return(map[string][]string{}, nil)
-	g.EXPECT().GetMergeRequestChanges(mock.Anything).Return([]domain.Diff{{NewPath: "new.go", Content: "diff2"}}, nil)
-	o.EXPECT().ReviewCode(mock.Anything, mock.Anything).Return(`{"issues":[]}`, nil)
+	expectSingleDiffReview(h, nil, nil, "")
 
-	r := NewReviewer(c, g, o, zap.NewNop())
+	r := NewReviewer(h.config, h.mr, h.ai, h.logger)
 
 	if err := r.Run(context.Background()); err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -165,21 +158,17 @@ func TestRunDeletesBotCommentsWhenEnabled(t *testing.T) {
 }
 
 func TestRunUsesOnlyKnownDiffPathWhenIssueFileIsEmpty(t *testing.T) {
-	c := newConfigMock(t, false)
-	g := mocks.NewMRProviderPort(t)
-	o := mocks.NewAIProviderPort(t)
+	h := newReviewerHarness(t, false)
 	added := make([]addedDiscussion, 0, 1)
 
-	g.EXPECT().GetExistingComments(mock.Anything).Return(map[string][]string{}, nil)
-	g.EXPECT().GetMergeRequestChanges(mock.Anything).Return([]domain.Diff{{NewPath: "new.go", Content: "diff2"}}, nil)
-	o.EXPECT().ReviewCode(mock.Anything, mock.Anything).Return(`{"issues":[{"line":10,"severity":"warning","message":"fix it"}]}`, nil)
-	g.EXPECT().AddMergeRequestDiscussion(mock.Anything, "new.go", 10, warningComment).
+	expectSingleDiffReview(h, nil, nil, `{"line":10,"severity":"warning","message":"fix it"}`)
+	h.mr.EXPECT().AddMergeRequestDiscussion(mock.Anything, "new.go", 10, warningComment).
 		Run(func(_ context.Context, file string, line int, body string) {
 			added = append(added, addedDiscussion{file: file, line: line, body: body})
 		}).
 		Return(nil)
 
-	r := NewReviewer(c, g, o, zap.NewNop())
+	r := NewReviewer(h.config, h.mr, h.ai, h.logger)
 
 	if err := r.Run(context.Background()); err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -190,15 +179,11 @@ func TestRunUsesOnlyKnownDiffPathWhenIssueFileIsEmpty(t *testing.T) {
 }
 
 func TestRunSkipsUnknownFilesFromAIResponse(t *testing.T) {
-	c := newConfigMock(t, false)
-	g := mocks.NewMRProviderPort(t)
-	o := mocks.NewAIProviderPort(t)
+	h := newReviewerHarness(t, false)
 
-	g.EXPECT().GetExistingComments(mock.Anything).Return(map[string][]string{}, nil)
-	g.EXPECT().GetMergeRequestChanges(mock.Anything).Return([]domain.Diff{{NewPath: "new.go", Content: "diff2"}}, nil)
-	o.EXPECT().ReviewCode(mock.Anything, mock.Anything).Return(`{"issues":[{"file":"other.go","line":10,"severity":"warning","message":"fix it"}]}`, nil)
+	expectSingleDiffReview(h, nil, nil, `{"file":"other.go","line":10,"severity":"warning","message":"fix it"}`)
 
-	r := NewReviewer(c, g, o, zap.NewNop())
+	r := NewReviewer(h.config, h.mr, h.ai, h.logger)
 
 	if err := r.Run(context.Background()); err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -219,18 +204,16 @@ func TestBuildCombinedDiffSortsPathsAndDetectsLanguages(t *testing.T) {
 }
 
 func TestRunCancelsInFlightReview(t *testing.T) {
-	c := newConfigMock(t, false)
-	g := mocks.NewMRProviderPort(t)
-	ai := mocks.NewAIProviderPort(t)
+	h := newReviewerHarness(t, false)
 
-	g.EXPECT().GetExistingComments(mock.Anything).Return(map[string][]string{}, nil)
-	g.EXPECT().GetMergeRequestChanges(mock.Anything).Return([]domain.Diff{{NewPath: "new.go", Content: "diff2"}}, nil)
-	ai.EXPECT().ReviewCode(mock.Anything, mock.Anything).RunAndReturn(func(ctx context.Context, _ string) (string, error) {
+	h.mr.EXPECT().GetExistingComments(mock.Anything).Return(map[string][]string{}, nil)
+	h.mr.EXPECT().GetMergeRequestChanges(mock.Anything).Return([]domain.Diff{{NewPath: "new.go", Content: "diff2"}}, nil)
+	h.ai.EXPECT().ReviewCode(mock.Anything, mock.Anything).RunAndReturn(func(ctx context.Context, _ string) (string, error) {
 		<-ctx.Done()
 		return "", ctx.Err()
 	})
 
-	r := NewReviewer(c, g, ai, zap.NewNop())
+	r := NewReviewer(h.config, h.mr, h.ai, h.logger)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
 	defer cancel()
@@ -252,4 +235,33 @@ func newConfigMock(t *testing.T, deleteBotComments bool) *mocks.ConfigPort {
 	config.On("GetCommentPrefix").Return("ai-mr-reviewer")
 
 	return config
+}
+
+func newReviewerHarness(t *testing.T, deleteBotComments bool) reviewerHarness {
+	t.Helper()
+
+	return reviewerHarness{
+		config: newConfigMock(t, deleteBotComments),
+		mr:     mocks.NewMRProviderPort(t),
+		ai:     mocks.NewAIProviderPort(t),
+		logger: zap.NewNop(),
+	}
+}
+
+func expectSingleDiffReview(h reviewerHarness, comments map[string][]string, commentsErr error, issue string) {
+	if comments == nil {
+		comments = map[string][]string{}
+	}
+
+	h.mr.EXPECT().GetExistingComments(mock.Anything).Return(comments, commentsErr)
+	h.mr.EXPECT().GetMergeRequestChanges(mock.Anything).Return([]domain.Diff{{NewPath: "new.go", Content: "diff2"}}, nil)
+	h.ai.EXPECT().ReviewCode(mock.Anything, mock.Anything).Return(issueResponse(issue), nil)
+}
+
+func issueResponse(issue string) string {
+	if issue == "" {
+		return `{"issues":[]}`
+	}
+
+	return `{"issues":[` + issue + `]}`
 }
