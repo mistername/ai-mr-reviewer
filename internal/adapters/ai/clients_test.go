@@ -103,7 +103,7 @@ func TestAnthropicClientReviewCodeReturnsStatusError(t *testing.T) {
 	t.Parallel()
 
 	client := NewAnthropicClient("anthropic-token", "https://api.anthropic.test/v1", "claude-test")
-	client.http = &http.Client{Transport: httpstub.RoundTripFunc(func(req *http.Request) (*http.Response, error) {
+	client.http = &http.Client{Transport: httpstub.RoundTripFunc(func(*http.Request) (*http.Response, error) {
 		return httpstub.JSONResponse(http.StatusBadGateway, `{"error":"bad gateway"}`), nil
 	})}
 
@@ -120,7 +120,7 @@ func TestAnthropicClientReviewCodeReturnsDecodeError(t *testing.T) {
 	t.Parallel()
 
 	client := NewAnthropicClient("anthropic-token", "https://api.anthropic.test/v1", "claude-test")
-	client.http = &http.Client{Transport: httpstub.RoundTripFunc(func(req *http.Request) (*http.Response, error) {
+	client.http = &http.Client{Transport: httpstub.RoundTripFunc(func(*http.Request) (*http.Response, error) {
 		return httpstub.JSONResponse(http.StatusOK, `{"content":`), nil
 	})}
 
@@ -137,7 +137,7 @@ func TestAnthropicClientReviewCodeReturnsNoContentError(t *testing.T) {
 	t.Parallel()
 
 	client := NewAnthropicClient("anthropic-token", "https://api.anthropic.test/v1", "claude-test")
-	client.http = &http.Client{Transport: httpstub.RoundTripFunc(func(req *http.Request) (*http.Response, error) {
+	client.http = &http.Client{Transport: httpstub.RoundTripFunc(func(*http.Request) (*http.Response, error) {
 		return httpstub.JSONResponse(http.StatusOK, `{"content":[]}`), nil
 	})}
 
@@ -202,7 +202,7 @@ func TestOllamaClientReviewCodeReturnsStatusError(t *testing.T) {
 	t.Parallel()
 
 	client := NewOllamaClient("http://localhost:11434", "ollama-key", "llama3.2")
-	client.http = &http.Client{Transport: httpstub.RoundTripFunc(func(req *http.Request) (*http.Response, error) {
+	client.http = &http.Client{Transport: httpstub.RoundTripFunc(func(*http.Request) (*http.Response, error) {
 		return httpstub.JSONResponse(http.StatusBadGateway, `{"error":"bad gateway"}`), nil
 	})}
 
@@ -219,7 +219,7 @@ func TestOllamaClientReviewCodeReturnsDecodeError(t *testing.T) {
 	t.Parallel()
 
 	client := NewOllamaClient("http://localhost:11434", "ollama-key", "llama3.2")
-	client.http = &http.Client{Transport: httpstub.RoundTripFunc(func(req *http.Request) (*http.Response, error) {
+	client.http = &http.Client{Transport: httpstub.RoundTripFunc(func(*http.Request) (*http.Response, error) {
 		return httpstub.JSONResponse(http.StatusOK, `{"message":`), nil
 	})}
 
