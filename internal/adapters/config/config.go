@@ -30,9 +30,6 @@ type Config struct {
 	AnthropicAuthToken      string        `env:"ANTHROPIC_AUTH_TOKEN"`
 	AnthropicBaseURL        string        `env:"ANTHROPIC_BASE_URL" envDefault:"https://api.anthropic.com/v1/"`
 	AnthropicModel          string        `env:"ANTHROPIC_MODEL" envDefault:"claude-sonnet-4-20250514"`
-	MiniMaxAPIKey           string        `env:"MINIMAX_API_KEY"`
-	MiniMaxBaseURL          string        `env:"MINIMAX_BASE_URL" envDefault:"https://api.minimax.io/v1"`
-	MiniMaxModel            string        `env:"MINIMAX_MODEL" envDefault:"MiniMax-M2.5"`
 	CopilotBaseURL          string        `env:"COPILOT_BASE_URL" envDefault:"https://models.github.ai/inference"`
 	CopilotModel            string        `env:"COPILOT_MODEL" envDefault:"openai/gpt-4.1"`
 	CommentPrefix           string        `env:"COMMENT_PREFIX,notEmpty" envDefault:"ai-mr-reviewer"`
@@ -131,18 +128,6 @@ func (c *Config) GetAnthropicBaseURL() string {
 
 func (c *Config) GetAnthropicModel() string {
 	return c.AnthropicModel
-}
-
-func (c *Config) GetMiniMaxAPIKey() string {
-	return c.MiniMaxAPIKey
-}
-
-func (c *Config) GetMiniMaxBaseURL() string {
-	return c.MiniMaxBaseURL
-}
-
-func (c *Config) GetMiniMaxModel() string {
-	return c.MiniMaxModel
 }
 
 func (c *Config) GetCopilotBaseURL() string {

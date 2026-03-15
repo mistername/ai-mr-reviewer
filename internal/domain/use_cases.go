@@ -40,9 +40,6 @@ type ConfigPort interface {
 	GetAnthropicAuthToken() string
 	GetAnthropicBaseURL() string
 	GetAnthropicModel() string
-	GetMiniMaxAPIKey() string
-	GetMiniMaxBaseURL() string
-	GetMiniMaxModel() string
 	GetCopilotBaseURL() string
 	GetCopilotModel() string
 	GetRunTimeout() time.Duration

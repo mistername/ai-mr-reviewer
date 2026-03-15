@@ -16,12 +16,10 @@ func NewAIProvider(config domain.ConfigPort) (domain.AIProviderPort, error) {
 		return newOpenAIProvider(config)
 	case "anthropic":
 		return newAnthropicProvider(config)
-	case "minimax":
-		return newMinimaxProvider(config)
 	case "copilot":
 		return newCopilotProvider(config)
 	default:
-		return nil, fmt.Errorf("unsupported AI provider: %s (supported: ollama, openai, anthropic, minimax, copilot)", provider)
+		return nil, fmt.Errorf("unsupported AI provider: %s (supported: ollama, openai, anthropic, copilot)", provider)
 	}
 }
 
@@ -39,14 +37,6 @@ func newAnthropicProvider(config domain.ConfigPort) (domain.AIProviderPort, erro
 	}
 
 	return NewAnthropicClient(config.GetAnthropicAuthToken(), config.GetAnthropicBaseURL(), config.GetAnthropicModel()), nil
-}
-
-func newMinimaxProvider(config domain.ConfigPort) (domain.AIProviderPort, error) {
-	if config.GetMiniMaxAPIKey() == "" {
-		return nil, fmt.Errorf("MINIMAX_API_KEY is required for minimax provider")
-	}
-
-	return NewMiniMaxClient(config.GetMiniMaxAPIKey(), config.GetMiniMaxBaseURL(), config.GetMiniMaxModel()), nil
 }
 
 func newCopilotProvider(config domain.ConfigPort) (domain.AIProviderPort, error) {
