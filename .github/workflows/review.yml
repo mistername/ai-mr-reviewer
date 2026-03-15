@@ -31,8 +31,10 @@ jobs:
           GITHUB_REPO: ${{ github.event.repository.name }}
           GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
           CI_COMMIT_SHA: ${{ github.sha }}
-          AI_PROVIDER: minimax
-          MINIMAX_API_KEY: ${{ secrets.MINIMAX_API_KEY }}
+          AI_PROVIDER: openai
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL }}
+          OPENAI_MODEL: ${{ secrets.OPENAI_MODEL }}
           DELETE_BOT_COMMENTS: true
           RUN_TIMEOUT: 10m
         run: go install . && ai-mr-reviewer

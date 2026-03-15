@@ -119,9 +119,6 @@ func (configMockForTest) GetAnthropicBaseURL() string        { return "https://a
 func (configMockForTest) GetAnthropicModel() string          { return "claude-sonnet-4-20250514" }
 func (configMockForTest) GetDeleteBotComments() bool         { return false }
 func (configMockForTest) GetCommentPrefix() string           { return "ai-mr-reviewer" }
-func (configMockForTest) GetMiniMaxAPIKey() string           { return "" }
-func (configMockForTest) GetMiniMaxBaseURL() string          { return "https://api.minimax.chat/v1" }
-func (configMockForTest) GetMiniMaxModel() string            { return "MiniMax-M2.5" }
 func (configMockForTest) GetCopilotBaseURL() string          { return "https://models.github.ai/inference" }
 func (configMockForTest) GetCopilotModel() string            { return "openai/gpt-4.1" }
 func (configMockForTest) GetRunTimeout() time.Duration       { return 10 * time.Minute }

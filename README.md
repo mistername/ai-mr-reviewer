@@ -1,6 +1,6 @@
 # AI MR Reviewer
 
-AI-powered code review bot for GitLab Merge Requests and GitHub Pull Requests supporting multiple AI providers (Ollama, OpenAI, Anthropic, MiniMax, Copilot).
+AI-powered code review bot for GitLab Merge Requests and GitHub Pull Requests supporting multiple AI providers (Ollama, OpenAI, Anthropic, Copilot).
 
 ## Overview
 
@@ -40,7 +40,7 @@ go run ./main.go
 ## Features
 
 - Supports both GitLab Merge Requests and GitHub Pull Requests
-- AI-powered analysis (Ollama, OpenAI, Anthropic, MiniMax, Copilot)
+- AI-powered analysis (Ollama, OpenAI, Anthropic, Copilot)
 - Inline comments with line numbers
 - Configurable comment prefix and cleanup of previous bot comments
 - Hexagonal architecture
@@ -55,7 +55,6 @@ go run ./main.go
   - Ollama server with a model (e.g., llama3.2)
   - OpenAI API key
   - Anthropic API key
-  - MiniMax API key
   - GitHub token (for Copilot/GitHub Models)
 
 ## Configuration
@@ -91,7 +90,7 @@ go run ./main.go
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `AI_PROVIDER` | AI provider: `ollama`, `openai`, `anthropic`, `minimax`, or `copilot` | `ollama` |
+| `AI_PROVIDER` | AI provider: `ollama`, `openai`, `anthropic`, or `copilot` | `ollama` |
 
 ### Review Behavior
 
@@ -124,14 +123,6 @@ go run ./main.go
 | `ANTHROPIC_AUTH_TOKEN` | Anthropic auth token | - |
 | `ANTHROPIC_BASE_URL` | Anthropic API base URL | `https://api.anthropic.com/v1/` |
 | `ANTHROPIC_MODEL` | Anthropic model name | `claude-sonnet-4-20250514` |
-
-### MiniMax Configuration
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `MINIMAX_API_KEY` | MiniMax API key | - |
-| `MINIMAX_BASE_URL` | MiniMax API base URL | `https://api.minimax.io/v1` |
-| `MINIMAX_MODEL` | MiniMax model name | `MiniMax-M2.5` |
 
 ### Copilot Configuration
 
@@ -169,21 +160,6 @@ export GITHUB_PR_NUMBER="123"
 export CI_COMMIT_SHA="abc123"
 export AI_PROVIDER="openai"
 export OPENAI_API_KEY="your-openai-key"
-
-go run ./main.go
-```
-
-### Running locally (GitHub + MiniMax)
-
-```bash
-export VCS_PROVIDER="github"
-export GITHUB_TOKEN="your-github-token"
-export GITHUB_OWNER="your-username"
-export GITHUB_REPO="your-repo"
-export GITHUB_PR_NUMBER="123"
-export CI_COMMIT_SHA="abc123"
-export AI_PROVIDER="minimax"
-export MINIMAX_API_KEY="your-minimax-key"
 
 go run ./main.go
 ```
@@ -322,14 +298,6 @@ Anthropic example (`env` additions):
           ANTHROPIC_MODEL: claude-sonnet-4-20250514
 ```
 
-MiniMax example (`env` additions):
-
-```yaml
-          AI_PROVIDER: minimax
-          MINIMAX_API_KEY: ${{ secrets.MINIMAX_API_KEY }}
-          MINIMAX_MODEL: MiniMax-M2.5
-```
-
 Copilot example (`env` additions):
 
 ```yaml
@@ -404,7 +372,7 @@ internal/
   adapters/
     gitlab/         # GitLab API client
     github/         # GitHub API client
-    ai/             # AI provider adapters (Ollama, OpenAI, Anthropic, MiniMax, Copilot)
+    ai/             # AI provider adapters (Ollama, OpenAI, Anthropic, Copilot)
     config/         # Configuration
 ```
 
