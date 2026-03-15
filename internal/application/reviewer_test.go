@@ -18,6 +18,11 @@ type addedDiscussion struct {
 	body string
 }
 
+const (
+	warningComment           = "ai-mr-reviewer:**WARNING**: fix it"
+	expectedOneDiscussionFmt = "expected 1 discussion, got %d"
+)
+
 func TestParseReviewResponse(t *testing.T) {
 	issues, err := parseReviewResponse("some text {\"issues\":[{\"file\":\"a.go\",\"line\":3,\"severity\":\"warning\",\"message\":\"x\"}]} tail")
 	if err != nil {
@@ -64,14 +69,14 @@ func TestRunReviewsOnlyNewDiffs(t *testing.T) {
 	added := make([]addedDiscussion, 0, 1)
 
 	g.EXPECT().GetExistingComments(mock.Anything).Return(map[string][]string{
-		"already.go:1": {"ai-mr-reviewer:**WARNING**: fix it"},
+		"already.go:1": {warningComment},
 	}, nil)
 	g.EXPECT().GetMergeRequestChanges(mock.Anything).Return([]domain.Diff{
 		{NewPath: "already.go", Content: "diff1"},
 		{NewPath: "new.go", Content: "diff2"},
 	}, nil)
 	o.EXPECT().ReviewCode(mock.Anything, mock.Anything).Return(`{"issues":[{"file":"new.go","line":10,"severity":"warning","message":"fix it"}]}`, nil)
-	g.EXPECT().AddMergeRequestDiscussion(mock.Anything, "new.go", 10, "ai-mr-reviewer:**WARNING**: fix it").
+	g.EXPECT().AddMergeRequestDiscussion(mock.Anything, "new.go", 10, warningComment).
 		Run(func(_ context.Context, file string, line int, body string) {
 			added = append(added, addedDiscussion{file: file, line: line, body: body})
 		}).
@@ -83,7 +88,7 @@ func TestRunReviewsOnlyNewDiffs(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if len(added) != 1 {
-		t.Fatalf("expected 1 discussion, got %d", len(added))
+		t.Fatalf(expectedOneDiscussionFmt, len(added))
 	}
 	if added[0].file != "new.go" || added[0].line != 10 {
 		t.Fatalf("unexpected discussion: %+v", added[0])
@@ -99,7 +104,7 @@ func TestRunReviewsNewDiffsNoFilter(t *testing.T) {
 	g.EXPECT().GetExistingComments(mock.Anything).Return(map[string][]string{}, nil)
 	g.EXPECT().GetMergeRequestChanges(mock.Anything).Return([]domain.Diff{{NewPath: "new.go", Content: "diff2"}}, nil)
 	o.EXPECT().ReviewCode(mock.Anything, mock.Anything).Return(`{"issues":[{"file":"new.go","line":10,"severity":"warning","message":"fix it"}]}`, nil)
-	g.EXPECT().AddMergeRequestDiscussion(mock.Anything, "new.go", 10, "ai-mr-reviewer:**WARNING**: fix it").
+	g.EXPECT().AddMergeRequestDiscussion(mock.Anything, "new.go", 10, warningComment).
 		Run(func(context.Context, string, int, string) { callCount++ }).
 		Return(nil)
 
@@ -109,7 +114,7 @@ func TestRunReviewsNewDiffsNoFilter(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if callCount != 1 {
-		t.Fatalf("expected 1 discussion, got %d", callCount)
+		t.Fatalf(expectedOneDiscussionFmt, callCount)
 	}
 }
 
@@ -122,7 +127,7 @@ func TestRunContinuesWhenExistingCommentsFail(t *testing.T) {
 	g.EXPECT().GetExistingComments(mock.Anything).Return(nil, context.DeadlineExceeded)
 	g.EXPECT().GetMergeRequestChanges(mock.Anything).Return([]domain.Diff{{NewPath: "new.go", Content: "diff2"}}, nil)
 	o.EXPECT().ReviewCode(mock.Anything, mock.Anything).Return(`{"issues":[{"file":"new.go","line":10,"severity":"warning","message":"fix it"}]}`, nil)
-	g.EXPECT().AddMergeRequestDiscussion(mock.Anything, "new.go", 10, "ai-mr-reviewer:**WARNING**: fix it").
+	g.EXPECT().AddMergeRequestDiscussion(mock.Anything, "new.go", 10, warningComment).
 		Run(func(context.Context, string, int, string) { callCount++ }).
 		Return(nil)
 
@@ -132,7 +137,7 @@ func TestRunContinuesWhenExistingCommentsFail(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if callCount != 1 {
-		t.Fatalf("expected 1 discussion, got %d", callCount)
+		t.Fatalf(expectedOneDiscussionFmt, callCount)
 	}
 }
 
@@ -168,7 +173,7 @@ func TestRunUsesOnlyKnownDiffPathWhenIssueFileIsEmpty(t *testing.T) {
 	g.EXPECT().GetExistingComments(mock.Anything).Return(map[string][]string{}, nil)
 	g.EXPECT().GetMergeRequestChanges(mock.Anything).Return([]domain.Diff{{NewPath: "new.go", Content: "diff2"}}, nil)
 	o.EXPECT().ReviewCode(mock.Anything, mock.Anything).Return(`{"issues":[{"line":10,"severity":"warning","message":"fix it"}]}`, nil)
-	g.EXPECT().AddMergeRequestDiscussion(mock.Anything, "new.go", 10, "ai-mr-reviewer:**WARNING**: fix it").
+	g.EXPECT().AddMergeRequestDiscussion(mock.Anything, "new.go", 10, warningComment).
 		Run(func(_ context.Context, file string, line int, body string) {
 			added = append(added, addedDiscussion{file: file, line: line, body: body})
 		}).
