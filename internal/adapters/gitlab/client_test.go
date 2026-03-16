@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/adlandh/ai-mr-reviewer/internal/domain/mocks"
+	"github.com/adlandh/ai-mr-reviewer/internal/domain"
 	"github.com/adlandh/ai-mr-reviewer/internal/testutil/httpstub"
 	gogitlab "gitlab.com/gitlab-org/api/client-go"
 )
@@ -18,6 +18,7 @@ const testGitLabBaseURL = "https://gitlab.example.com/api/v4"
 const testGitLabMRPath = "/api/v4/projects/123/merge_requests/5"
 const testGitLabNotesPath = "/notes"
 const testGitLabNotesPathPrefix = testGitLabMRPath + testGitLabNotesPath + "/"
+const testCommentPrefix = "ai-mr-reviewer"
 const errNewClient = "NewClient returned error: %v"
 const errUnexpectedRequest = "unexpected request: %s %s"
 const errCreateStubGitLabClient = "create stub gitlab client: %v"
@@ -39,9 +40,7 @@ type discussionRequest struct {
 func TestNewClientReturnsErrorForInvalidBaseURL(t *testing.T) {
 	t.Parallel()
 
-	cfg := mocks.NewConfigPort(t)
-
-	_, err := NewClient("://bad-url", "token", "123", 5, cfg)
+	_, err := NewClient(domain.GitLabConfig{URL: "://bad-url", Token: "token", ProjectID: "123"}, domain.RuntimeConfig{}, 5)
 	if err == nil {
 		t.Fatal("expected error for invalid base URL")
 	}
@@ -50,9 +49,7 @@ func TestNewClientReturnsErrorForInvalidBaseURL(t *testing.T) {
 func TestClientGetMergeRequestChangesReturnsDiffs(t *testing.T) {
 	t.Parallel()
 
-	cfg := mocks.NewConfigPort(t)
-
-	client, err := NewClient(testGitLabBaseURL, "token", "123", 5, cfg)
+	client, err := NewClient(domain.GitLabConfig{URL: testGitLabBaseURL, Token: "token", ProjectID: "123"}, domain.RuntimeConfig{}, 5)
 	if err != nil {
 		t.Fatalf(errNewClient, err)
 	}
@@ -85,14 +82,9 @@ func TestClientGetMergeRequestChangesReturnsDiffs(t *testing.T) {
 func TestClientAddMergeRequestDiscussionIncludesPositionAndPrefix(t *testing.T) {
 	t.Parallel()
 
-	cfg := mocks.NewConfigPort(t)
-	cfg.EXPECT().GetCommitSHA().Return("head-sha")
-	cfg.EXPECT().GetMergeRequestDiffBaseSHA().Return("base-sha")
-	cfg.EXPECT().GetCommentPrefix().Return("ai-mr-reviewer")
-
 	var got discussionRequest
 
-	client, err := NewClient(testGitLabBaseURL, "token", "123", 5, cfg)
+	client, err := NewClient(domain.GitLabConfig{URL: testGitLabBaseURL, Token: "token", ProjectID: "123", CommitSHA: "head-sha", MergeRequestDiffBaseSHA: "base-sha"}, domain.RuntimeConfig{CommentPrefix: testCommentPrefix}, 5)
 	if err != nil {
 		t.Fatalf(errNewClient, err)
 	}
@@ -123,9 +115,7 @@ func TestClientAddMergeRequestDiscussionIncludesPositionAndPrefix(t *testing.T) 
 func TestClientGetExistingCommentsReturnsOnlyNonSystemPositionedNotes(t *testing.T) {
 	t.Parallel()
 
-	cfg := mocks.NewConfigPort(t)
-
-	client, err := NewClient(testGitLabBaseURL, "token", "123", 5, cfg)
+	client, err := NewClient(domain.GitLabConfig{URL: testGitLabBaseURL, Token: "token", ProjectID: "123"}, domain.RuntimeConfig{}, 5)
 	if err != nil {
 		t.Fatalf(errNewClient, err)
 	}
@@ -156,11 +146,8 @@ func TestClientGetExistingCommentsReturnsOnlyNonSystemPositionedNotes(t *testing
 func TestClientDeleteBotCommentsExceptResolvedDeletesOnlyUnresolvedBotNotes(t *testing.T) {
 	t.Parallel()
 
-	cfg := mocks.NewConfigPort(t)
-	cfg.On("GetCommentPrefix").Return("ai-mr-reviewer").Maybe()
-
 	var deleted []string
-	client, err := NewClient(testGitLabBaseURL, "token", "123", 5, cfg)
+	client, err := NewClient(domain.GitLabConfig{URL: testGitLabBaseURL, Token: "token", ProjectID: "123"}, domain.RuntimeConfig{CommentPrefix: testCommentPrefix}, 5)
 	if err != nil {
 		t.Fatalf(errNewClient, err)
 	}
@@ -204,10 +191,7 @@ func TestClientDeleteBotCommentsExceptResolvedDeletesOnlyUnresolvedBotNotes(t *t
 func TestClientDeleteBotCommentsExceptResolvedReturnsDeleteError(t *testing.T) {
 	t.Parallel()
 
-	cfg := mocks.NewConfigPort(t)
-	cfg.On("GetCommentPrefix").Return("ai-mr-reviewer").Maybe()
-
-	client, err := NewClient(testGitLabBaseURL, "token", "123", 5, cfg)
+	client, err := NewClient(domain.GitLabConfig{URL: testGitLabBaseURL, Token: "token", ProjectID: "123"}, domain.RuntimeConfig{CommentPrefix: testCommentPrefix}, 5)
 	if err != nil {
 		t.Fatalf(errNewClient, err)
 	}
