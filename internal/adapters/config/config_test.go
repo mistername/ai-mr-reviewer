@@ -21,29 +21,29 @@ func TestNewConfigWithDefaults(t *testing.T) {
 		t.Fatalf("expected config, got error: %v", err)
 	}
 
-	if cfg.GetVCSProvider() != "gitlab" {
-		t.Fatalf("unexpected VCS provider: %s", cfg.GetVCSProvider())
+	if cfg.VCS.Provider != "gitlab" {
+		t.Fatalf("unexpected VCS provider: %s", cfg.VCS.Provider)
 	}
-	if cfg.GetGitLabURL() != "https://gitlab.com" {
-		t.Fatalf("unexpected GitLab URL: %s", cfg.GetGitLabURL())
+	if cfg.VCS.GitLab.URL != "https://gitlab.com" {
+		t.Fatalf("unexpected GitLab URL: %s", cfg.VCS.GitLab.URL)
 	}
-	if cfg.GetOllamaURL() != "http://localhost:11434" {
-		t.Fatalf("unexpected Ollama URL: %s", cfg.GetOllamaURL())
+	if cfg.AI.Ollama.URL != "http://localhost:11434" {
+		t.Fatalf("unexpected Ollama URL: %s", cfg.AI.Ollama.URL)
 	}
-	if cfg.GetOllamaModel() != "llama3.2" {
-		t.Fatalf("unexpected Ollama model: %s", cfg.GetOllamaModel())
+	if cfg.AI.Ollama.Model != "llama3.2" {
+		t.Fatalf("unexpected Ollama model: %s", cfg.AI.Ollama.Model)
 	}
-	if cfg.GetMergeRequestIID() != "1" {
-		t.Fatalf("unexpected MergeRequestIID: %s", cfg.GetMergeRequestIID())
+	if cfg.VCS.GitLab.MergeRequestIID != "1" {
+		t.Fatalf("unexpected MergeRequestIID: %s", cfg.VCS.GitLab.MergeRequestIID)
 	}
-	if cfg.GetCommitSHA() != "abc123" {
-		t.Fatalf("unexpected CommitSHA: %s", cfg.GetCommitSHA())
+	if cfg.VCS.GitLab.CommitSHA != "abc123" {
+		t.Fatalf("unexpected CommitSHA: %s", cfg.VCS.GitLab.CommitSHA)
 	}
-	if cfg.GetMergeRequestDiffBaseSHA() != "def456" {
-		t.Fatalf("unexpected MergeRequestDiffBaseSHA: %s", cfg.GetMergeRequestDiffBaseSHA())
+	if cfg.VCS.GitLab.MergeRequestDiffBaseSHA != "def456" {
+		t.Fatalf("unexpected MergeRequestDiffBaseSHA: %s", cfg.VCS.GitLab.MergeRequestDiffBaseSHA)
 	}
-	if cfg.GetRunTimeout() != 10*time.Minute {
-		t.Fatalf("unexpected RunTimeout: %s", cfg.GetRunTimeout())
+	if cfg.Runtime.RunTimeout != 10*time.Minute {
+		t.Fatalf("unexpected RunTimeout: %s", cfg.Runtime.RunTimeout)
 	}
 }
 
@@ -60,7 +60,7 @@ func TestNewConfigMissingRequired(t *testing.T) {
 		t.Fatalf("expected config without error, got: %v", err)
 	}
 
-	if cfg.GetVCSProvider() != "gitlab" {
-		t.Fatalf("unexpected VCS provider: %s", cfg.GetVCSProvider())
+	if cfg.VCS.Provider != "gitlab" {
+		t.Fatalf("unexpected VCS provider: %s", cfg.VCS.Provider)
 	}
 }

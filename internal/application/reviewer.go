@@ -15,10 +15,10 @@ import (
 )
 
 type Reviewer struct {
-	config     domain.ConfigPort
+	logger     *zap.Logger
 	mrProvider domain.MRProviderPort
 	aiProvider domain.AIProviderPort
-	logger     *zap.Logger
+	runtime    domain.RuntimeConfig
 }
 
 type reviewResponse struct {
@@ -63,12 +63,12 @@ var languageMap = map[string]string{
 	".md":    "Markdown",
 }
 
-func NewReviewer(config domain.ConfigPort, mrProvider domain.MRProviderPort, aiProvider domain.AIProviderPort, logger *zap.Logger) *Reviewer {
-	return &Reviewer{config: config, mrProvider: mrProvider, aiProvider: aiProvider, logger: logger}
+func NewReviewer(runtime domain.RuntimeConfig, mrProvider domain.MRProviderPort, aiProvider domain.AIProviderPort, logger *zap.Logger) *Reviewer {
+	return &Reviewer{runtime: runtime, mrProvider: mrProvider, aiProvider: aiProvider, logger: logger}
 }
 
 func (r *Reviewer) Run(ctx context.Context) error {
-	if r.config.GetDeleteBotComments() {
+	if r.runtime.DeleteBotComments {
 		if err := r.mrProvider.DeleteBotCommentsExceptResolved(ctx); err != nil {
 			r.logger.Warn("cannot delete bot comments", zap.Error(err))
 		}
@@ -86,7 +86,7 @@ func (r *Reviewer) Run(ctx context.Context) error {
 		return fmt.Errorf("get MR changes: %w", err)
 	}
 
-	prefix := r.config.GetCommentPrefix() + ":"
+	prefix := r.runtime.CommentPrefix + ":"
 
 	filteredDiffs := r.filterNewDiffs(diffs, existing, prefix)
 	if len(filteredDiffs) == 0 {
@@ -144,7 +144,7 @@ func (r *Reviewer) reviewDiffs(ctx context.Context, diffs []domain.Diff) error {
 		knownFiles[d.NewPath] = struct{}{}
 	}
 
-	prefix := r.config.GetCommentPrefix()
+	prefix := r.runtime.CommentPrefix
 
 	for _, issue := range issues {
 		filePath := issue.FilePath

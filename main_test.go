@@ -3,6 +3,7 @@ package main
 import (
 	"testing"
 
+	"github.com/adlandh/ai-mr-reviewer/internal/domain"
 	"github.com/adlandh/ai-mr-reviewer/internal/domain/mocks"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
@@ -70,7 +71,7 @@ func TestProvidersReturnCorrectTypes(t *testing.T) {
 }
 
 func TestReviewerWithMocks(t *testing.T) {
-	cfg := mocks.NewConfigPort(t)
+	cfg := &domain.Config{}
 	mrProvider := mocks.NewMRProviderPort(t)
 	aiProvider := mocks.NewAIProviderPort(t)
 	logger := zap.NewNop()

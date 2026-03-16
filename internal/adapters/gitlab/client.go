@@ -11,29 +11,29 @@ import (
 )
 
 type Client struct {
-	config    domain.ConfigPort
-	git       *gitlab.Client
-	projectID string
-	iid       int
+	git     *gitlab.Client
+	gitlab  domain.GitLabConfig
+	runtime domain.RuntimeConfig
+	iid     int
 }
 
-func NewClient(url, token, projectID string, iid int, config domain.ConfigPort) (*Client, error) {
-	git, err := gitlab.NewClient(token, gitlab.WithBaseURL(url))
+func NewClient(config domain.GitLabConfig, runtime domain.RuntimeConfig, iid int) (*Client, error) {
+	git, err := gitlab.NewClient(config.Token, gitlab.WithBaseURL(config.URL))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create gitlab client: %w", err)
 	}
 
 	return &Client{
-		git:       git,
-		projectID: projectID,
-		iid:       iid,
-		config:    config,
+		git:     git,
+		iid:     iid,
+		runtime: runtime,
+		gitlab:  config,
 	}, nil
 }
 
 func (c *Client) GetMergeRequestChanges(ctx context.Context) ([]domain.Diff, error) {
 	changes, _, err := c.git.MergeRequests.ListMergeRequestDiffs(
-		c.projectID,
+		c.gitlab.ProjectID,
 		int64(c.iid),
 		&gitlab.ListMergeRequestDiffsOptions{},
 		gitlab.WithContext(ctx),
@@ -56,7 +56,7 @@ func (c *Client) GetMergeRequestChanges(ctx context.Context) ([]domain.Diff, err
 
 func (c *Client) GetExistingComments(ctx context.Context) (map[string][]string, error) {
 	notes, _, err := c.git.Notes.ListMergeRequestNotes(
-		c.projectID,
+		c.gitlab.ProjectID,
 		int64(c.iid),
 		&gitlab.ListMergeRequestNotesOptions{},
 		gitlab.WithContext(ctx),
@@ -84,16 +84,16 @@ func (c *Client) GetExistingComments(ctx context.Context) (map[string][]string, 
 }
 
 func (c *Client) AddMergeRequestDiscussion(ctx context.Context, file string, line int, note string) error {
-	commitSHA := c.config.GetCommitSHA()
-	baseSHA := c.config.GetMergeRequestDiffBaseSHA()
+	commitSHA := c.gitlab.CommitSHA
+	baseSHA := c.gitlab.MergeRequestDiffBaseSHA
 	positionType := "line"
 
 	line64 := int64(line)
 
-	noteWithPrefix := c.config.GetCommentPrefix() + ": " + note
+	noteWithPrefix := c.runtime.CommentPrefix + ": " + note
 
 	_, _, err := c.git.Discussions.CreateMergeRequestDiscussion(
-		c.projectID,
+		c.gitlab.ProjectID,
 		int64(c.iid),
 		&gitlab.CreateMergeRequestDiscussionOptions{
 			Body: &noteWithPrefix,
@@ -118,7 +118,7 @@ func (c *Client) AddMergeRequestDiscussion(ctx context.Context, file string, lin
 
 func (c *Client) DeleteBotCommentsExceptResolved(ctx context.Context) error {
 	notes, _, err := c.git.Notes.ListMergeRequestNotes(
-		c.projectID,
+		c.gitlab.ProjectID,
 		int64(c.iid),
 		&gitlab.ListMergeRequestNotesOptions{},
 		gitlab.WithContext(ctx),
@@ -132,11 +132,11 @@ func (c *Client) DeleteBotCommentsExceptResolved(ctx context.Context) error {
 			continue
 		}
 
-		if !strings.HasPrefix(note.Body, c.config.GetCommentPrefix()+":") {
+		if !strings.HasPrefix(note.Body, c.runtime.CommentPrefix+":") {
 			continue
 		}
 
-		_, err := c.git.Notes.DeleteMergeRequestNote(c.projectID, int64(c.iid), note.ID, gitlab.WithContext(ctx))
+		_, err := c.git.Notes.DeleteMergeRequestNote(c.gitlab.ProjectID, int64(c.iid), note.ID, gitlab.WithContext(ctx))
 		if err != nil {
 			return fmt.Errorf("failed to delete note: %w", err)
 		}

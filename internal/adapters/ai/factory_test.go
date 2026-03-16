@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/adlandh/ai-mr-reviewer/internal/domain/mocks"
+	"github.com/adlandh/ai-mr-reviewer/internal/domain"
 )
 
 func TestNewAIProviderCreatesSupportedProviders(t *testing.T) {
@@ -13,11 +13,7 @@ func TestNewAIProviderCreatesSupportedProviders(t *testing.T) {
 	t.Run("ollama", func(t *testing.T) {
 		t.Parallel()
 
-		config := mocks.NewConfigPort(t)
-		config.EXPECT().GetAIProvider().Return("ollama")
-		config.EXPECT().GetOllamaURL().Return("http://localhost:11434")
-		config.EXPECT().GetOllamaAPIKey().Return("ollama-key")
-		config.EXPECT().GetOllamaModel().Return("llama3.2")
+		config := domain.AIConfig{Provider: "ollama", Ollama: domain.OllamaConfig{URL: "http://localhost:11434", APIKey: "ollama-key", Model: "llama3.2"}}
 
 		provider, err := NewAIProvider(config)
 		if err != nil {
@@ -30,11 +26,7 @@ func TestNewAIProviderCreatesSupportedProviders(t *testing.T) {
 	t.Run("openai", func(t *testing.T) {
 		t.Parallel()
 
-		config := mocks.NewConfigPort(t)
-		config.EXPECT().GetAIProvider().Return("openai")
-		config.EXPECT().GetOpenAIAPIKey().Return("openai-key").Times(2)
-		config.EXPECT().GetOpenAIBaseURL().Return("https://api.openai.test/v1")
-		config.EXPECT().GetOpenAIModel().Return("gpt-test")
+		config := domain.AIConfig{Provider: "openai", OpenAI: domain.OpenAIConfig{APIKey: "openai-key", BaseURL: "https://api.openai.test/v1", Model: "gpt-test"}}
 
 		provider, err := NewAIProvider(config)
 		if err != nil {
@@ -47,11 +39,7 @@ func TestNewAIProviderCreatesSupportedProviders(t *testing.T) {
 	t.Run("anthropic", func(t *testing.T) {
 		t.Parallel()
 
-		config := mocks.NewConfigPort(t)
-		config.EXPECT().GetAIProvider().Return("anthropic")
-		config.EXPECT().GetAnthropicAuthToken().Return("anthropic-token").Times(2)
-		config.EXPECT().GetAnthropicBaseURL().Return("https://api.anthropic.test/v1")
-		config.EXPECT().GetAnthropicModel().Return("claude-test")
+		config := domain.AIConfig{Provider: "anthropic", Anthropic: domain.AnthropicConfig{AuthToken: "anthropic-token", BaseURL: "https://api.anthropic.test/v1", Model: "claude-test"}}
 
 		provider, err := NewAIProvider(config)
 		if err != nil {
@@ -64,11 +52,7 @@ func TestNewAIProviderCreatesSupportedProviders(t *testing.T) {
 	t.Run("copilot", func(t *testing.T) {
 		t.Parallel()
 
-		config := mocks.NewConfigPort(t)
-		config.EXPECT().GetAIProvider().Return("copilot")
-		config.EXPECT().GetGitHubToken().Return("github-token").Times(2)
-		config.EXPECT().GetCopilotBaseURL().Return("https://models.github.ai/inference")
-		config.EXPECT().GetCopilotModel().Return("openai/gpt-4.1")
+		config := domain.AIConfig{Provider: "copilot", Copilot: domain.CopilotConfig{Token: "github-token", BaseURL: "https://models.github.ai/inference", Model: "openai/gpt-4.1"}}
 
 		provider, err := NewAIProvider(config)
 		if err != nil {
@@ -82,8 +66,7 @@ func TestNewAIProviderCreatesSupportedProviders(t *testing.T) {
 func TestNewAIProviderRejectsMiniMax(t *testing.T) {
 	t.Parallel()
 
-	config := mocks.NewConfigPort(t)
-	config.EXPECT().GetAIProvider().Return("minimax")
+	config := domain.AIConfig{Provider: "minimax"}
 
 	_, err := NewAIProvider(config)
 	if err == nil {
@@ -104,32 +87,22 @@ func TestNewAIProviderRequiresProviderCredentials(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		provider    string
-		setupMock   func(*mocks.ConfigPort)
+		config      domain.AIConfig
 		errorSubstr string
 	}{
 		{
-			name:     "openai",
-			provider: "openai",
-			setupMock: func(config *mocks.ConfigPort) {
-				config.EXPECT().GetOpenAIAPIKey().Return("")
-			},
+			name:        "openai",
+			config:      domain.AIConfig{Provider: "openai"},
 			errorSubstr: "OPENAI_API_KEY is required",
 		},
 		{
-			name:     "anthropic",
-			provider: "anthropic",
-			setupMock: func(config *mocks.ConfigPort) {
-				config.EXPECT().GetAnthropicAuthToken().Return("")
-			},
+			name:        "anthropic",
+			config:      domain.AIConfig{Provider: "anthropic"},
 			errorSubstr: "ANTHROPIC_AUTH_TOKEN is required",
 		},
 		{
-			name:     "copilot",
-			provider: "copilot",
-			setupMock: func(config *mocks.ConfigPort) {
-				config.EXPECT().GetGitHubToken().Return("")
-			},
+			name:        "copilot",
+			config:      domain.AIConfig{Provider: "copilot"},
 			errorSubstr: "GITHUB_TOKEN is required",
 		},
 	}
@@ -139,11 +112,7 @@ func TestNewAIProviderRequiresProviderCredentials(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			config := mocks.NewConfigPort(t)
-			config.EXPECT().GetAIProvider().Return(tt.provider)
-			tt.setupMock(config)
-
-			_, err := NewAIProvider(config)
+			_, err := NewAIProvider(tt.config)
 			if err == nil {
 				t.Fatal("expected credential validation error")
 			}

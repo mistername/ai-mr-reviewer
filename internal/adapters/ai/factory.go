@@ -6,12 +6,12 @@ import (
 	"github.com/adlandh/ai-mr-reviewer/internal/domain"
 )
 
-func NewAIProvider(config domain.ConfigPort) (domain.AIProviderPort, error) {
-	provider := config.GetAIProvider()
+func NewAIProvider(config domain.AIConfig) (domain.AIProviderPort, error) {
+	provider := config.Provider
 
 	switch provider {
 	case "ollama":
-		return NewOllamaClient(config.GetOllamaURL(), config.GetOllamaAPIKey(), config.GetOllamaModel()), nil
+		return NewOllamaClient(config.Ollama.URL, config.Ollama.APIKey, config.Ollama.Model), nil
 	case "openai":
 		return newOpenAIProvider(config)
 	case "anthropic":
@@ -23,26 +23,26 @@ func NewAIProvider(config domain.ConfigPort) (domain.AIProviderPort, error) {
 	}
 }
 
-func newOpenAIProvider(config domain.ConfigPort) (domain.AIProviderPort, error) {
-	if config.GetOpenAIAPIKey() == "" {
+func newOpenAIProvider(config domain.AIConfig) (domain.AIProviderPort, error) {
+	if config.OpenAI.APIKey == "" {
 		return nil, fmt.Errorf("OPENAI_API_KEY is required for openai provider")
 	}
 
-	return NewOpenAIClient(config.GetOpenAIAPIKey(), config.GetOpenAIBaseURL(), config.GetOpenAIModel()), nil
+	return NewOpenAIClient(config.OpenAI.APIKey, config.OpenAI.BaseURL, config.OpenAI.Model), nil
 }
 
-func newAnthropicProvider(config domain.ConfigPort) (domain.AIProviderPort, error) {
-	if config.GetAnthropicAuthToken() == "" {
+func newAnthropicProvider(config domain.AIConfig) (domain.AIProviderPort, error) {
+	if config.Anthropic.AuthToken == "" {
 		return nil, fmt.Errorf("ANTHROPIC_AUTH_TOKEN is required for anthropic provider")
 	}
 
-	return NewAnthropicClient(config.GetAnthropicAuthToken(), config.GetAnthropicBaseURL(), config.GetAnthropicModel()), nil
+	return NewAnthropicClient(config.Anthropic.AuthToken, config.Anthropic.BaseURL, config.Anthropic.Model), nil
 }
 
-func newCopilotProvider(config domain.ConfigPort) (domain.AIProviderPort, error) {
-	if config.GetGitHubToken() == "" {
+func newCopilotProvider(config domain.AIConfig) (domain.AIProviderPort, error) {
+	if config.Copilot.Token == "" {
 		return nil, fmt.Errorf("GITHUB_TOKEN is required for copilot provider")
 	}
 
-	return NewCopilotClient(config.GetGitHubToken(), config.GetCopilotBaseURL(), config.GetCopilotModel()), nil
+	return NewCopilotClient(config.Copilot.Token, config.Copilot.BaseURL, config.Copilot.Model), nil
 }

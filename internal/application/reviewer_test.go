@@ -19,10 +19,10 @@ type addedDiscussion struct {
 }
 
 type reviewerHarness struct {
-	config *mocks.ConfigPort
-	mr     *mocks.MRProviderPort
-	ai     *mocks.AIProviderPort
-	logger *zap.Logger
+	runtime domain.RuntimeConfig
+	mr      *mocks.MRProviderPort
+	ai      *mocks.AIProviderPort
+	logger  *zap.Logger
 }
 
 const (
@@ -87,7 +87,7 @@ func TestRunReviewsOnlyNewDiffs(t *testing.T) {
 		}).
 		Return(nil)
 
-	r := NewReviewer(h.config, h.mr, h.ai, h.logger)
+	r := NewReviewer(h.runtime, h.mr, h.ai, h.logger)
 
 	if err := r.Run(context.Background()); err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -109,7 +109,7 @@ func TestRunReviewsNewDiffsNoFilter(t *testing.T) {
 		Run(func(context.Context, string, int, string) { callCount++ }).
 		Return(nil)
 
-	r := NewReviewer(h.config, h.mr, h.ai, h.logger)
+	r := NewReviewer(h.runtime, h.mr, h.ai, h.logger)
 
 	if err := r.Run(context.Background()); err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -128,7 +128,7 @@ func TestRunContinuesWhenExistingCommentsFail(t *testing.T) {
 		Run(func(context.Context, string, int, string) { callCount++ }).
 		Return(nil)
 
-	r := NewReviewer(h.config, h.mr, h.ai, h.logger)
+	r := NewReviewer(h.runtime, h.mr, h.ai, h.logger)
 
 	if err := r.Run(context.Background()); err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -147,7 +147,7 @@ func TestRunDeletesBotCommentsWhenEnabled(t *testing.T) {
 		Return(nil)
 	expectSingleDiffReview(h, nil, nil, "")
 
-	r := NewReviewer(h.config, h.mr, h.ai, h.logger)
+	r := NewReviewer(h.runtime, h.mr, h.ai, h.logger)
 
 	if err := r.Run(context.Background()); err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -168,7 +168,7 @@ func TestRunUsesOnlyKnownDiffPathWhenIssueFileIsEmpty(t *testing.T) {
 		}).
 		Return(nil)
 
-	r := NewReviewer(h.config, h.mr, h.ai, h.logger)
+	r := NewReviewer(h.runtime, h.mr, h.ai, h.logger)
 
 	if err := r.Run(context.Background()); err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -183,7 +183,7 @@ func TestRunSkipsUnknownFilesFromAIResponse(t *testing.T) {
 
 	expectSingleDiffReview(h, nil, nil, `{"file":"other.go","line":10,"severity":"warning","message":"fix it"}`)
 
-	r := NewReviewer(h.config, h.mr, h.ai, h.logger)
+	r := NewReviewer(h.runtime, h.mr, h.ai, h.logger)
 
 	if err := r.Run(context.Background()); err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -213,7 +213,7 @@ func TestRunCancelsInFlightReview(t *testing.T) {
 		return "", ctx.Err()
 	})
 
-	r := NewReviewer(h.config, h.mr, h.ai, h.logger)
+	r := NewReviewer(h.runtime, h.mr, h.ai, h.logger)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
 	defer cancel()
@@ -227,21 +227,15 @@ func TestRunCancelsInFlightReview(t *testing.T) {
 	}
 }
 
-func newConfigMock(t *testing.T, deleteBotComments bool) *mocks.ConfigPort {
-	t.Helper()
-
-	config := mocks.NewConfigPort(t)
-	config.On("GetDeleteBotComments").Return(deleteBotComments)
-	config.On("GetCommentPrefix").Return("ai-mr-reviewer")
-
-	return config
-}
-
 func newReviewerHarness(t *testing.T, deleteBotComments bool) reviewerHarness {
 	t.Helper()
 
 	return reviewerHarness{
-		config: newConfigMock(t, deleteBotComments),
+		runtime: domain.RuntimeConfig{
+			CommentPrefix:     "ai-mr-reviewer",
+			DeleteBotComments: deleteBotComments,
+			RunTimeout:        10 * time.Minute,
+		},
 		mr:     mocks.NewMRProviderPort(t),
 		ai:     mocks.NewAIProviderPort(t),
 		logger: zap.NewNop(),

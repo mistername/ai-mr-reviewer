@@ -56,7 +56,7 @@ func main() {
 	}
 }
 
-func newConfig() (domain.ConfigPort, error) {
+func newConfig() (*domain.Config, error) {
 	cfg, err := configadapter.New()
 	if err != nil {
 		return nil, fmt.Errorf("create config: %w", err)
@@ -65,8 +65,8 @@ func newConfig() (domain.ConfigPort, error) {
 	return cfg, nil
 }
 
-func newVCSClient(cfg domain.ConfigPort) (domain.MRProviderPort, error) {
-	provider := cfg.GetVCSProvider()
+func newVCSClient(cfg *domain.Config) (domain.MRProviderPort, error) {
+	provider := cfg.VCS.Provider
 
 	switch provider {
 	case "github":
@@ -78,26 +78,28 @@ func newVCSClient(cfg domain.ConfigPort) (domain.MRProviderPort, error) {
 	}
 }
 
-func newGitHubClient(cfg domain.ConfigPort) (domain.MRProviderPort, error) {
-	if cfg.GetGitHubToken() == "" {
+func newGitHubClient(cfg *domain.Config) (domain.MRProviderPort, error) {
+	github := cfg.VCS.GitHub
+
+	if github.Token == "" {
 		return nil, fmt.Errorf("GITHUB_TOKEN is required for github provider")
 	}
 
-	if cfg.GetGitHubOwner() == "" || cfg.GetGitHubRepo() == "" {
+	if github.Owner == "" || github.Repo == "" {
 		return nil, fmt.Errorf("GITHUB_OWNER and GITHUB_REPO are required for github provider")
 	}
 
-	if cfg.GetGitHubPRNumber() == "" {
+	if github.PRNumber == "" {
 		return nil, fmt.Errorf("GITHUB_PR_NUMBER is required for github provider")
 	}
 
 	client, err := githubadapter.NewClient(
-		cfg.GetGitHubToken(),
-		cfg.GetGitHubOwner(),
-		cfg.GetGitHubRepo(),
-		cfg.GetGitHubPRNumber(),
-		cfg.GetCommitSHA(),
-		cfg.GetCommentPrefix(),
+		github.Token,
+		github.Owner,
+		github.Repo,
+		github.PRNumber,
+		github.CommitSHA,
+		cfg.Runtime.CommentPrefix,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("create GitHub client: %w", err)
@@ -106,16 +108,18 @@ func newGitHubClient(cfg domain.ConfigPort) (domain.MRProviderPort, error) {
 	return client, nil
 }
 
-func newGitLabClient(cfg domain.ConfigPort) (domain.MRProviderPort, error) {
-	if cfg.GetGitLabToken() == "" {
+func newGitLabClient(cfg *domain.Config) (domain.MRProviderPort, error) {
+	gitlab := cfg.VCS.GitLab
+
+	if gitlab.Token == "" {
 		return nil, fmt.Errorf("GITLAB_TOKEN is required for gitlab provider")
 	}
 
-	if cfg.GetProjectID() == "" {
+	if gitlab.ProjectID == "" {
 		return nil, fmt.Errorf("CI_PROJECT_ID is required for gitlab provider")
 	}
 
-	iidStr := cfg.GetMergeRequestIID()
+	iidStr := gitlab.MergeRequestIID
 	if iidStr == "" {
 		return nil, fmt.Errorf("CI_MERGE_REQUEST_IID is required for gitlab provider")
 	}
@@ -125,13 +129,7 @@ func newGitLabClient(cfg domain.ConfigPort) (domain.MRProviderPort, error) {
 		return nil, fmt.Errorf("parse CI_MERGE_REQUEST_IID: %w", err)
 	}
 
-	client, err := gitlabadapter.NewClient(
-		cfg.GetGitLabURL(),
-		cfg.GetGitLabToken(),
-		cfg.GetProjectID(),
-		iid,
-		cfg,
-	)
+	client, err := gitlabadapter.NewClient(gitlab, cfg.Runtime, iid)
 	if err != nil {
 		return nil, fmt.Errorf("create GitLab client: %w", err)
 	}
@@ -139,8 +137,8 @@ func newGitLabClient(cfg domain.ConfigPort) (domain.MRProviderPort, error) {
 	return client, nil
 }
 
-func newAIProvider(cfg domain.ConfigPort) (domain.AIProviderPort, error) {
-	provider, err := aiadapter.NewAIProvider(cfg)
+func newAIProvider(cfg *domain.Config) (domain.AIProviderPort, error) {
+	provider, err := aiadapter.NewAIProvider(cfg.AI)
 	if err != nil {
 		return nil, fmt.Errorf("create AI provider: %w", err)
 	}
@@ -148,14 +146,14 @@ func newAIProvider(cfg domain.ConfigPort) (domain.AIProviderPort, error) {
 	return provider, nil
 }
 
-func newReviewer(cfg domain.ConfigPort, mrProvider domain.MRProviderPort, aiProvider domain.AIProviderPort, logger *zap.Logger) *application.Reviewer {
-	return application.NewReviewer(cfg, mrProvider, aiProvider, logger)
+func newReviewer(cfg *domain.Config, mrProvider domain.MRProviderPort, aiProvider domain.AIProviderPort, logger *zap.Logger) *application.Reviewer {
+	return application.NewReviewer(cfg.Runtime, mrProvider, aiProvider, logger)
 }
 
-func runReview(reviewer *application.Reviewer, logger *zap.Logger, cfg domain.ConfigPort) error {
+func runReview(reviewer *application.Reviewer, logger *zap.Logger, cfg *domain.Config) error {
 	logger.Info("starting MR Reviewer")
 
-	ctx, cancel := context.WithTimeout(context.Background(), cfg.GetRunTimeout())
+	ctx, cancel := context.WithTimeout(context.Background(), cfg.Runtime.RunTimeout)
 	defer cancel()
 
 	if err := reviewer.Run(ctx); err != nil {

@@ -8,7 +8,7 @@ import (
 	"github.com/caarlos0/env/v11"
 )
 
-type Config struct {
+type envConfig struct {
 	GitHubPRNumber          string        `env:"GITHUB_PR_NUMBER"`
 	AIProvider              string        `env:"AI_PROVIDER,notEmpty" envDefault:"ollama"`
 	GitLabToken             string        `env:"GITLAB_TOKEN"`
@@ -37,117 +37,58 @@ type Config struct {
 	DeleteBotComments       bool          `env:"DELETE_BOT_COMMENTS" envDefault:"true"`
 }
 
-func New() (*Config, error) {
-	cfg, err := env.ParseAsWithOptions[Config](env.Options{RequiredIfNoDef: false})
+func New() (*domain.Config, error) {
+	raw, err := env.ParseAsWithOptions[envConfig](env.Options{RequiredIfNoDef: false})
 	if err != nil {
 		return nil, fmt.Errorf("parse config: %w", err)
 	}
 
-	return &cfg, nil
+	return &domain.Config{
+		Runtime: domain.RuntimeConfig{
+			CommentPrefix:     raw.CommentPrefix,
+			RunTimeout:        raw.RunTimeout,
+			DeleteBotComments: raw.DeleteBotComments,
+		},
+		VCS: domain.VCSConfig{
+			Provider: raw.VCSProvider,
+			GitHub: domain.GitHubConfig{
+				Token:     raw.GitHubToken,
+				Owner:     raw.GitHubOwner,
+				Repo:      raw.GitHubRepo,
+				PRNumber:  raw.GitHubPRNumber,
+				CommitSHA: raw.CommitSHA,
+			},
+			GitLab: domain.GitLabConfig{
+				URL:                     raw.GitLabURL,
+				Token:                   raw.GitLabToken,
+				ProjectID:               raw.ProjectID,
+				MergeRequestIID:         raw.MergeRequestIID,
+				CommitSHA:               raw.CommitSHA,
+				MergeRequestDiffBaseSHA: raw.MergeRequestDiffBaseSHA,
+			},
+		},
+		AI: domain.AIConfig{
+			Provider: raw.AIProvider,
+			Ollama: domain.OllamaConfig{
+				URL:    raw.OllamaURL,
+				APIKey: raw.OllamaAPIKey,
+				Model:  raw.OllamaModel,
+			},
+			OpenAI: domain.OpenAIConfig{
+				APIKey:  raw.OpenAIAPIKey,
+				BaseURL: raw.OpenAIBaseURL,
+				Model:   raw.OpenAIModel,
+			},
+			Anthropic: domain.AnthropicConfig{
+				AuthToken: raw.AnthropicAuthToken,
+				BaseURL:   raw.AnthropicBaseURL,
+				Model:     raw.AnthropicModel,
+			},
+			Copilot: domain.CopilotConfig{
+				Token:   raw.GitHubToken,
+				BaseURL: raw.CopilotBaseURL,
+				Model:   raw.CopilotModel,
+			},
+		},
+	}, nil
 }
-
-func (c *Config) GetGitLabURL() string {
-	return c.GitLabURL
-}
-
-func (c *Config) GetGitLabToken() string {
-	return c.GitLabToken
-}
-
-func (c *Config) GetProjectID() string {
-	return c.ProjectID
-}
-
-func (c *Config) GetMergeRequestIID() string {
-	return c.MergeRequestIID
-}
-
-func (c *Config) GetCommitSHA() string {
-	return c.CommitSHA
-}
-
-func (c *Config) GetMergeRequestDiffBaseSHA() string {
-	return c.MergeRequestDiffBaseSHA
-}
-
-func (c *Config) GetVCSProvider() string {
-	return c.VCSProvider
-}
-
-func (c *Config) GetGitHubToken() string {
-	return c.GitHubToken
-}
-
-func (c *Config) GetGitHubOwner() string {
-	return c.GitHubOwner
-}
-
-func (c *Config) GetGitHubRepo() string {
-	return c.GitHubRepo
-}
-
-func (c *Config) GetGitHubPRNumber() string {
-	return c.GitHubPRNumber
-}
-
-func (c *Config) GetAIProvider() string {
-	return c.AIProvider
-}
-
-func (c *Config) GetOllamaURL() string {
-	return c.OllamaURL
-}
-
-func (c *Config) GetOllamaAPIKey() string {
-	return c.OllamaAPIKey
-}
-
-func (c *Config) GetOllamaModel() string {
-	return c.OllamaModel
-}
-
-func (c *Config) GetOpenAIAPIKey() string {
-	return c.OpenAIAPIKey
-}
-
-func (c *Config) GetOpenAIBaseURL() string {
-	return c.OpenAIBaseURL
-}
-
-func (c *Config) GetOpenAIModel() string {
-	return c.OpenAIModel
-}
-
-func (c *Config) GetAnthropicAuthToken() string {
-	return c.AnthropicAuthToken
-}
-
-func (c *Config) GetAnthropicBaseURL() string {
-	return c.AnthropicBaseURL
-}
-
-func (c *Config) GetAnthropicModel() string {
-	return c.AnthropicModel
-}
-
-func (c *Config) GetCopilotBaseURL() string {
-	return c.CopilotBaseURL
-}
-
-func (c *Config) GetCopilotModel() string {
-	return c.CopilotModel
-}
-
-func (c *Config) GetRunTimeout() time.Duration {
-	return c.RunTimeout
-}
-
-func (c *Config) GetDeleteBotComments() bool {
-	return c.DeleteBotComments
-}
-
-func (c *Config) GetCommentPrefix() string {
-	return c.CommentPrefix
-}
-
-var _ domain.ConfigPort = (*Config)(nil)
