@@ -18,6 +18,7 @@ const testGitLabBaseURL = "https://gitlab.example.com/api/v4"
 const testGitLabMRPath = "/api/v4/projects/123/merge_requests/5"
 const testGitLabNotesPath = "/notes"
 const testGitLabNotesPathPrefix = testGitLabMRPath + testGitLabNotesPath + "/"
+const testCommentPrefix = "ai-mr-reviewer"
 const errNewClient = "NewClient returned error: %v"
 const errUnexpectedRequest = "unexpected request: %s %s"
 const errCreateStubGitLabClient = "create stub gitlab client: %v"
@@ -83,7 +84,7 @@ func TestClientAddMergeRequestDiscussionIncludesPositionAndPrefix(t *testing.T) 
 
 	var got discussionRequest
 
-	client, err := NewClient(domain.GitLabConfig{URL: testGitLabBaseURL, Token: "token", ProjectID: "123", CommitSHA: "head-sha", MergeRequestDiffBaseSHA: "base-sha"}, domain.RuntimeConfig{CommentPrefix: "ai-mr-reviewer"}, 5)
+	client, err := NewClient(domain.GitLabConfig{URL: testGitLabBaseURL, Token: "token", ProjectID: "123", CommitSHA: "head-sha", MergeRequestDiffBaseSHA: "base-sha"}, domain.RuntimeConfig{CommentPrefix: testCommentPrefix}, 5)
 	if err != nil {
 		t.Fatalf(errNewClient, err)
 	}
@@ -146,7 +147,7 @@ func TestClientDeleteBotCommentsExceptResolvedDeletesOnlyUnresolvedBotNotes(t *t
 	t.Parallel()
 
 	var deleted []string
-	client, err := NewClient(domain.GitLabConfig{URL: testGitLabBaseURL, Token: "token", ProjectID: "123"}, domain.RuntimeConfig{CommentPrefix: "ai-mr-reviewer"}, 5)
+	client, err := NewClient(domain.GitLabConfig{URL: testGitLabBaseURL, Token: "token", ProjectID: "123"}, domain.RuntimeConfig{CommentPrefix: testCommentPrefix}, 5)
 	if err != nil {
 		t.Fatalf(errNewClient, err)
 	}
@@ -190,7 +191,7 @@ func TestClientDeleteBotCommentsExceptResolvedDeletesOnlyUnresolvedBotNotes(t *t
 func TestClientDeleteBotCommentsExceptResolvedReturnsDeleteError(t *testing.T) {
 	t.Parallel()
 
-	client, err := NewClient(domain.GitLabConfig{URL: testGitLabBaseURL, Token: "token", ProjectID: "123"}, domain.RuntimeConfig{CommentPrefix: "ai-mr-reviewer"}, 5)
+	client, err := NewClient(domain.GitLabConfig{URL: testGitLabBaseURL, Token: "token", ProjectID: "123"}, domain.RuntimeConfig{CommentPrefix: testCommentPrefix}, 5)
 	if err != nil {
 		t.Fatalf(errNewClient, err)
 	}

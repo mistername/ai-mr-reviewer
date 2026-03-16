@@ -8,6 +8,7 @@ This file gives coding agents the practical rules for working in `github.com/adl
 - Architecture: hexagonal/ports-and-adapters
 - Entrypoint: `main.go`
 - Key areas: `internal/application`, `internal/domain`, `internal/adapters/{ai,github,gitlab,config}`, `internal/testutil`
+- Config model: concrete typed config in `internal/domain/config.go`, parsed in `internal/adapters/config/config.go`
 
 ## Rule Files Present
 
@@ -53,7 +54,7 @@ This file gives coding agents the practical rules for working in `github.com/adl
 
 - Pre-commit hook in `.lefthook.yml` runs:
   - `go generate ./...`
-  - `golangci-lint run` on staged Go files
+  - `golangci-lint run`
   - `go fix ./...` on staged Go files
 - Pre-push hook runs:
   - `go test -v -race ./...`
@@ -78,6 +79,7 @@ This file gives coding agents the practical rules for working in `github.com/adl
 - Prefer explicit constructor functions like `NewClient`, `NewReviewer`, `NewAIProvider`.
 - Keep package APIs narrow and cohesive.
 - Prefer concrete structs behind domain interfaces/ports.
+- Prefer direct field access on concrete config structs over getter wrappers.
 - Return concrete values plus `error`; do not panic in normal flow.
 - Use zero values and defaults intentionally.
 - Prefer `strings.Builder`, `maps`, `slices`, and other stdlib helpers already used in the codebase when they simplify logic.
@@ -104,11 +106,12 @@ This file gives coding agents the practical rules for working in `github.com/adl
 ## Types and Architecture
 
 - Keep domain contracts in `internal/domain`.
+- Keep shared runtime/config data as concrete domain structs when mocking would only add indirection.
 - Put orchestration logic in `internal/application`.
 - Put external service implementations in `internal/adapters/...`.
 - New VCS or AI providers should usually be added as new adapters implementing an existing domain port.
 - Thread `context.Context` through external calls and long-running operations.
-- Keep config access behind `domain.ConfigPort` instead of reading env vars directly in application/adapters outside the config package.
+- Read env vars only in `internal/adapters/config`; pass typed config values downward from there.
 - Prefer dependency injection via Fx wiring in `main.go` rather than package globals.
 
 ## Testing Guidelines
@@ -118,7 +121,7 @@ This file gives coding agents the practical rules for working in `github.com/adl
 - Many tests call `t.Parallel()` early; preserve that where safe.
 - Use `t.Setenv(...)` for configuration-driven tests.
 - For HTTP client tests, prefer `internal/testutil/httpstub` over real network calls.
-- For domain port mocks, use generated mocks in `internal/domain/mocks`.
+- For domain port mocks, use generated mocks in `internal/domain/mocks`; for config, prefer concrete fixtures unless a remaining interface truly needs a mock.
 - Keep assertions explicit and readable; existing tests often use `t.Fatalf` / `t.Fatal` directly.
 
 ## Linting Rules That Matter in Practice
@@ -143,6 +146,7 @@ This file gives coding agents the practical rules for working in `github.com/adl
 ## Useful File References
 
 - `main.go` - Fx wiring and startup lifecycle
+- `internal/domain/config.go` - typed runtime, VCS, and AI config structs
 - `internal/domain/use_cases.go` - core port interfaces and mock generation entrypoint
 - `internal/application/reviewer.go` - main review workflow
 - `internal/adapters/config/config.go` - env-based config source
