@@ -2,6 +2,8 @@
 
 `ai-mr-reviewer` is a Go CLI that reviews GitLab merge requests and GitHub pull requests with an AI model and publishes inline feedback back to the code review.
 
+This is a hobby project. It is not production-ready and should be used with that expectation.
+
 It supports:
 - GitLab merge requests
 - GitHub pull requests
