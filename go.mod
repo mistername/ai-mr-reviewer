@@ -3,7 +3,7 @@ module github.com/adlandh/ai-mr-reviewer
 go 1.26
 
 require (
-	github.com/caarlos0/env/v11 v11.4.0
+	github.com/caarlos0/env/v11 v11.4.1
 	github.com/google/go-github/v82 v82.0.0
 	github.com/stretchr/testify v1.11.1
 	gitlab.com/gitlab-org/api/client-go v1.46.0
