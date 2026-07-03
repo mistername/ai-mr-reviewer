@@ -1,4 +1,4 @@
-module github.com/adlandh/ai-mr-reviewer
+module github.com/mistername/ai-mr-reviewer
 
 go 1.26
 
