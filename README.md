@@ -205,7 +205,7 @@ ai-code-review:
     OLLAMA_URL: "http://ollama:11434"
     OLLAMA_MODEL: "llama3.2"
   before_script:
-    - go install github.com/adlandh/ai-mr-reviewer@latest
+    - go install github.com/mistername/ai-mr-reviewer@latest
   script:
     - ai-mr-reviewer
   rules:
@@ -246,7 +246,7 @@ jobs:
           GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
           CI_COMMIT_SHA: ${{ github.sha }}
           DELETE_BOT_COMMENTS: true
-        run: go install github.com/adlandh/ai-mr-reviewer@latest && ai-mr-reviewer
+        run: go install github.com/mistername/ai-mr-reviewer@latest && ai-mr-reviewer
 ```
 
 Provider-specific additions:

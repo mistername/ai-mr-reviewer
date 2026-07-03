@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/adlandh/ai-mr-reviewer/internal/domain"
-	"github.com/adlandh/ai-mr-reviewer/internal/testutil/httpstub"
+	"github.com/mistername/ai-mr-reviewer/internal/domain"
+	"github.com/mistername/ai-mr-reviewer/internal/testutil/httpstub"
 	gogitlab "gitlab.com/gitlab-org/api/client-go"
 )
 

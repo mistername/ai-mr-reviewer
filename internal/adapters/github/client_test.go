@@ -9,7 +9,7 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/adlandh/ai-mr-reviewer/internal/testutil/httpstub"
+	"github.com/mistername/ai-mr-reviewer/internal/testutil/httpstub"
 	gogithub "github.com/google/go-github/v82/github"
 )
 

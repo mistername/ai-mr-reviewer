@@ -25,7 +25,7 @@ jobs:
         run: go generate ./...
 
       - name: Download golangci-lint config
-        run: curl -sS https://raw.githubusercontent.com/adlandh/golangci-lint-config/refs/heads/main/.golangci.yml -o .golangci.yml
+        run: curl -sS https://raw.githubusercontent.com/mistername/golangci-lint-config/refs/heads/main/.golangci.yml -o .golangci.yml
 
       - name: Lint Code Base
         uses: golangci/golangci-lint-action@v9

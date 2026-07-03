@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This file gives coding agents the practical rules for working in `github.com/adlandh/ai-mr-reviewer`.
+This file gives coding agents the practical rules for working in `github.com/mistername/ai-mr-reviewer`.
 
 ## Project Snapshot
 
@@ -59,7 +59,7 @@ This file gives coding agents the practical rules for working in `github.com/adl
 ## CI and Linting
 
 - Local `.golangci.yml` sets `run.tests: false`, so local `golangci-lint run ./...` skips `*_test.go` files.
-- GitHub Actions lint does **not** use the checked-in `.golangci.yml`; `lint.yml` downloads a shared config from `adlandh/golangci-lint-config` before running the action. If CI lint disagrees with local lint, trust CI's downloaded config.
+- GitHub Actions lint does **not** use the checked-in `.golangci.yml`; `lint.yml` downloads a shared config from `mistername/golangci-lint-config` before running the action. If CI lint disagrees with local lint, trust CI's downloaded config.
 
 ## Code Style Expectations
 

@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/adlandh/ai-mr-reviewer/internal/domain"
+	"github.com/mistername/ai-mr-reviewer/internal/domain"
 )
 
 type CopilotClient struct {

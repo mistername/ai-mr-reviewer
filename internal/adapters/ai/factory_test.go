@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/adlandh/ai-mr-reviewer/internal/domain"
+	"github.com/mistername/ai-mr-reviewer/internal/domain"
 )
 
 func TestNewAIProviderCreatesSupportedProviders(t *testing.T) {

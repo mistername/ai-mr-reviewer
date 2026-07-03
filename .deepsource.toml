@@ -4,4 +4,4 @@ version = 1
 name = "go"
 
 [analyzers.meta]
-import_root = "github.com/adlandh/ai-mr-reviewer"
+import_root = "github.com/mistername/ai-mr-reviewer"

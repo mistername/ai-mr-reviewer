@@ -3,7 +3,7 @@ package ai
 import (
 	"fmt"
 
-	"github.com/adlandh/ai-mr-reviewer/internal/domain"
+	"github.com/mistername/ai-mr-reviewer/internal/domain"
 )
 
 func NewAIProvider(config domain.AIConfig) (domain.AIProviderPort, error) {

@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/adlandh/ai-mr-reviewer/internal/domain"
+	"github.com/mistername/ai-mr-reviewer/internal/domain"
 )
 
 type OllamaClient struct {

@@ -9,7 +9,7 @@ import (
 
 	"github.com/google/go-github/v82/github"
 
-	"github.com/adlandh/ai-mr-reviewer/internal/domain"
+	"github.com/mistername/ai-mr-reviewer/internal/domain"
 )
 
 type Client struct {

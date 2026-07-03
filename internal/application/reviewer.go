@@ -10,7 +10,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/adlandh/ai-mr-reviewer/internal/domain"
+	"github.com/mistername/ai-mr-reviewer/internal/domain"
 	"go.uber.org/zap"
 )
 

@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/adlandh/ai-mr-reviewer/internal/domain"
-	"github.com/adlandh/ai-mr-reviewer/internal/domain/mocks"
+	"github.com/mistername/ai-mr-reviewer/internal/domain"
+	"github.com/mistername/ai-mr-reviewer/internal/domain/mocks"
 	"github.com/stretchr/testify/mock"
 	"go.uber.org/zap"
 )

@@ -11,6 +11,6 @@ require-template-schema-exists: true
 template: testify
 template-schema: '{{.Template}}.schema.json'
 packages:
-  github.com/adlandh/ai-mr-reviewer/internal/domain:
+  github.com/mistername/ai-mr-reviewer/internal/domain:
     config:
       all: true
