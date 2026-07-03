@@ -86,7 +86,7 @@ func (c *Client) GetExistingComments(ctx context.Context) (map[string][]string, 
 func (c *Client) AddMergeRequestDiscussion(ctx context.Context, file string, line int, note string) error {
 	commitSHA := c.gitlab.CommitSHA
 	baseSHA := c.gitlab.MergeRequestDiffBaseSHA
-	positionType := "line"
+	positionType := "text"
 
 	line64 := int64(line)
 
