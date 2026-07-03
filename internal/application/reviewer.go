@@ -159,7 +159,8 @@ func (r *Reviewer) reviewDiffs(ctx context.Context, diffs []domain.Diff) error {
 			continue
 		}
 
-		body := fmt.Sprintf("%s:**%s**: %s", prefix, strings.ToUpper(issue.Severity), issue.Message)
+		body : = fmt.Sprintf("%s: %s", strings.ToUpper(issue.Severity), issue.Message)
+		// body := fmt.Sprintf("%s:**%s**: %s", prefix, strings.ToUpper(issue.Severity), issue.Message)
 		if err := r.mrProvider.AddMergeRequestDiscussion(ctx, filePath, issue.Line, body); err != nil {
 			r.logger.Warn("failed to add comment", zap.String("path", filePath), zap.Int("line", issue.Line), zap.Error(err))
 		}

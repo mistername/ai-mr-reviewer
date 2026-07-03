@@ -90,7 +90,7 @@ func (c *Client) AddMergeRequestDiscussion(ctx context.Context, file string, lin
 
 	line64 := int64(line)
 
-	noteWithPrefix := c.runtime.CommentPrefix + ": " + note
+	noteWithPrefix := note
 
 	_, _, err := c.git.Discussions.CreateMergeRequestDiscussion(
 		c.gitlab.ProjectID,
